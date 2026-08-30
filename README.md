@@ -1,6 +1,8 @@
-# 🌿 Cladum
+## Cladum
 
 Explorador de biodiversidad construido en JavaScript Vanilla moderno. Proyecto de portafolio que conecta formación en Biología con desarrollo front-end: búsqueda, filtrado y ficha técnica de especies consumidas en vivo desde la [API de GBIF](https://www.gbif.org/developer/species).
+
+🔗 Demo: [https://jonnschenk.github.io/Cladum/](https://jonnschenk.github.io/Cladum/)
 
 ## Stack
 
@@ -50,3 +52,14 @@ species-explorer/
 │   └── handlers/          # Event handlers
 └── assets/
 ```
+## Autor
+
+Jonathan M. Ramírez
+
+- Email: [jonathanrott.dev@gmail.com](mailto:jonathanrott.dev@gmail.com)
+- GitHub: [github.com/jonnschenk](https://github.com/jonnschenk)
+- LinkedIn: [linkedin.com/in/jonathan-ramírez](https://www.linkedin.com/in/jonathan-ramírez-2b0043246/)
+
+---
+
+© 2026 Jonathan Ramírez.
