@@ -1,0 +1,21 @@
+/* ==========================================================================
+   MAIN CSS — orquestador
+   El orden importa: base primero (tokens y reset), luego layout,
+   luego components. Así cada capa puede sobreescribir tokens
+   heredados de la anterior sin especificidad-wars.
+   ========================================================================== */
+
+@import url('base/variables.css');
+@import url('base/reset.css');
+@import url('base/typography.css');
+
+@import url('layout/header.css');
+@import url('layout/grid.css');
+@import url('layout/footer.css');
+
+@import url('components/search-bar.css');
+@import url('components/card.css');
+@import url('components/filters.css');
+@import url('components/modal.css');
+@import url('components/skeleton.css');
+@import url('components/states.css');
