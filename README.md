@@ -7,7 +7,7 @@ Explorador de biodiversidad construido en JavaScript Vanilla moderno. Proyecto d
 ## Stack
 
 - HTML5 semántico
-- CSS moderno (custom properties, Grid, Flexbox) — sin frameworks
+- Sass (SCSS) — custom properties, Grid, Flexbox — sin frameworks
 - JavaScript Vanilla ES Modules (arquitectura modular: services / state / ui / handlers)
 - Persistencia de favoritos con `localStorage`
 - Fuente de datos: [GBIF Species API](https://www.gbif.org/developer/species)
@@ -35,17 +35,27 @@ npx serve .
 
 Luego abre `http://localhost:8000`.
 
+Para editar estilos, instala las dependencias y compila Sass:
+
+```bash
+npm install
+npm run build:css     # compilación única
+npm run watch:css     # recompila en cada cambio
+```
+
 ## Estructura
 
 ```
-species-explorer/
+Cladum/
 ├── index.html
+├── scss/               # fuente de estilos (Sass)
+│   ├── base/            # tokens, reset, tipografía
+│   ├── layout/           # header, grid, footer
+│   ├── components/        # search-bar, card, filters, modal, skeleton, states
+│   └── main.scss           # orquestador (@use)
 ├── css/
-│   ├── base/        # tokens, reset, tipografía
-│   ├── layout/       # header, grid, footer
-│   ├── components/    # search-bar, card, filters, modal, skeleton, states
-│   └── main.css       # orquestador (@import)
-├── js/                # arquitectura modular (Fase 2+)
+│   └── styles.css      # generado por Sass — no editar a mano
+├── js/                 # arquitectura modular (Fase 2+)
 │   ├── services/       # API service
 │   ├── state/           # State manager
 │   ├── ui/               # DOM renderers

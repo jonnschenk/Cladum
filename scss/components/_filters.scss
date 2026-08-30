@@ -18,6 +18,12 @@
   justify-content: space-between;
 }
 
+.filters__title {
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
 .filters__reset {
   font-size: var(--fs-sm);
   color: var(--color-accent-dark);

@@ -1,0 +1,24 @@
+// ==========================================================================
+// MAIN.SCSS — orquestador
+// El orden importa: base primero (tokens y reset), luego layout,
+// luego components. Así cada capa puede sobreescribir tokens
+// heredados de la anterior sin especificidad-wars.
+//
+// Compila a css/main.css (archivo generado, no editar a mano).
+// Ver package.json → "build:css" / "watch:css".
+// ==========================================================================
+
+@use 'base/variables';
+@use 'base/reset';
+@use 'base/typography';
+
+@use 'layout/header';
+@use 'layout/grid';
+@use 'layout/footer';
+
+@use 'components/search-bar';
+@use 'components/card';
+@use 'components/filters';
+@use 'components/modal';
+@use 'components/skeleton';
+@use 'components/states';

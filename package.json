@@ -1,0 +1,14 @@
+{
+  "name": "cladum",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Explorador de biodiversidad — GBIF Species API",
+  "scripts": {
+    "build:css": "sass scss/main.scss css/styles.css --style=expanded --source-map",
+    "watch:css": "sass scss/main.scss css/styles.css --style=expanded --source-map --watch",
+    "build:css:prod": "sass scss/main.scss css/styles.css --style=compressed --no-source-map"
+  },
+  "devDependencies": {
+    "sass": "^1.77.0"
+  }
+}
