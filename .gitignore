@@ -1,0 +1,12 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/
+.idea/
+
+# Futuro: cuando lleguemos a Fase 6/7 (build tools, node_modules)
+node_modules/
+dist/
+.env

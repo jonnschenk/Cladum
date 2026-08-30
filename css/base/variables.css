@@ -1,0 +1,77 @@
+/* ==========================================================================
+   DESIGN TOKENS
+   Única fuente de verdad para color, tipografía y espaciado.
+   Cambiar la paleta/escala del proyecto entero pasa por este archivo.
+   ========================================================================== */
+
+:root {
+  /* --- Color: paleta neutra editorial con acento verde oliva ---
+     (misma línea estética que el portafolio: crema/negro/verde oliva) */
+  --color-bg: #faf9f6;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f2f0ea;
+  --color-text: #1c1c1a;
+  --color-text-muted: #5c5b56;
+  --color-border: #e3e1d9;
+
+  --color-accent: #6b7a4f;       /* verde oliva */
+  --color-accent-dark: #4f5c3a;
+  --color-accent-light: #eef1e6;
+
+  --color-danger: #b3432f;
+  --color-danger-bg: #fbeae6;
+  --color-success: #3d6b4f;
+
+  /* --- Tipografía ---
+     Serif para títulos (identidad editorial), sans para cuerpo (legibilidad UI) */
+  --font-serif: 'Fraunces', 'Georgia', serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.5rem;
+  --fs-xl: 2rem;
+  --fs-2xl: 2.75rem;
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+
+  --lh-tight: 1.2;
+  --lh-base: 1.55;
+
+  /* --- Espaciado: escala de 8px --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* --- Radios y sombras --- */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  --shadow-sm: 0 1px 3px rgba(28, 28, 26, 0.06);
+  --shadow-md: 0 4px 16px rgba(28, 28, 26, 0.08);
+  --shadow-lg: 0 12px 32px rgba(28, 28, 26, 0.12);
+
+  /* --- Layout --- */
+  --container-max: 1200px;
+  --header-height: 72px;
+
+  /* --- Transiciones --- */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+
+  /* --- Z-index scale --- */
+  --z-header: 100;
+  --z-modal-backdrop: 200;
+  --z-modal: 201;
+}
