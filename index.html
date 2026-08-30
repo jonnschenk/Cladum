@@ -5,15 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cladum — Explorador de biodiversidad</title>
   <meta name="description" content="Explora especies de todo el mundo: busca por nombre, filtra por reino y hábitat, y guarda tus favoritas." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>" />
 
   <!-- Google Fonts: serif editorial para títulos, sans para cuerpo -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 
-  <!-- NOTA (Fase 5): main.css usa @import, lo que genera peticiones HTTP
-       secuenciales. Para producción, concatenar/bundlear estos archivos. -->
-  <link rel="stylesheet" href="css/main.css" />
+  <!-- css/styles.css es generado desde scss/ (npm run build:css). No editar a mano. -->
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
 
@@ -70,7 +70,7 @@
         <aside class="explorer__sidebar" aria-label="Filtros de búsqueda">
           <form class="filters" id="filtersForm">
             <div class="filters__header">
-              <h2 class="text-sm" style="font-weight:600;">Filtros</h2>
+              <h2 class="filters__title">Filtros</h2>
               <button type="reset" class="filters__reset" id="filtersReset">Limpiar todo</button>
             </div>
 
