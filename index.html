@@ -1,286 +1,86 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cladum — Explorador de biodiversidad</title>
-  <meta name="description" content="Explora especies de todo el mundo: busca por nombre, filtra por reino y hábitat, y guarda tus favoritas." />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cladum · Explorador de biodiversidad</title>
+  <meta name="description" content="Cladum: explora especies, su clasificación y sus ocurrencias documentadas con datos verificables de GBIF.">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 
-  <!-- Google Fonts: serif editorial para títulos, sans para cuerpo -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Aplica el tema guardado antes de pintar para evitar parpadeo -->
+  <script>
+    try {
+      const saved = localStorage.getItem('cladum:theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
+    } catch (e) {
+      document.documentElement.dataset.theme = 'light';
+    }
+  </script>
 
-  <!-- css/styles.css es generado desde scss/ (npm run build:css). No editar a mano. -->
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800;1,14..32,400..700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/main.css">
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#app">Saltar al contenido</a>
 
-  <a class="sr-only" href="#main-content">Saltar al contenido principal</a>
+  <div class="site-header">
+    <header class="site-header__bar">
+      <a class="brand" href="#/" aria-label="Cladum, inicio">Cladum<span class="brand__dot">.</span></a>
 
-  <header class="site-header">
-    <div class="site-header__inner">
-      <div class="site-header__top">
-        <a href="#" class="brand" aria-label="Cladum, inicio">
-          <span class="brand__name">🌿 Cladum</span>
-          <span class="brand__tagline">Explorador de biodiversidad</span>
-        </a>
+      <nav class="main-nav" aria-label="Principal">
+        <ul class="main-nav__list">
+          <li class="main-nav__item"><a class="main-nav__link" href="#/" data-nav="search">Explorar</a></li>
+          <li class="main-nav__item"><a class="main-nav__link" role="link" data-nav="species" aria-disabled="true">Taxonomía</a></li>
+          <li class="main-nav__item"><a class="main-nav__link" role="link" data-nav="occurrences" aria-disabled="true">Ocurrencias</a></li>
+          <li class="main-nav__item"><a class="main-nav__link" href="#/guardadas" data-nav="saved">Guardadas <span class="main-nav__count" data-fav-count>0</span><span class="u-visually-hidden"> especies</span></a></li>
+        </ul>
+      </nav>
 
-        <button
-          type="button"
-          class="nav-favorites"
-          id="favoritesToggle"
-          aria-pressed="false"
-        >
-          <span aria-hidden="true">♥</span>
-          <span>Favoritos</span>
-          <span class="nav-favorites__count" id="favoritesCount" aria-live="polite">0</span>
+      <div class="site-header__actions">
+        <span class="pill pill--chip pill--lg" data-connection role="status">
+          <span class="pill__dot" aria-hidden="true"></span><span data-connection-text>GBIF · en vivo</span>
+        </span>
+        <button class="icon-btn" type="button" data-theme-toggle aria-label="Cambiar a modo oscuro">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
         </button>
       </div>
+    </header>
+  </div>
 
-      <form class="search-bar" role="search" id="searchForm">
-        <label for="searchInput" class="sr-only">Buscar especie por nombre</label>
-        <svg class="search-bar__icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="7"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input
-          type="search"
-          id="searchInput"
-          class="search-bar__input"
-          placeholder="Buscar por nombre común o científico… (ej. león, Panthera leo)"
-          autocomplete="off"
-        />
-        <button type="button" class="search-bar__clear" id="searchClear" aria-label="Limpiar búsqueda">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </form>
-    </div>
-  </header>
-
-  <main id="main-content">
-    <div class="container">
-      <div class="explorer">
-
-        <!-- ==================== SIDEBAR DE FILTROS ==================== -->
-        <aside class="explorer__sidebar" aria-label="Filtros de búsqueda">
-          <form class="filters" id="filtersForm">
-            <div class="filters__header">
-              <h2 class="filters__title">Filtros</h2>
-              <button type="reset" class="filters__reset" id="filtersReset">Limpiar todo</button>
-            </div>
-
-            <fieldset class="filter-group">
-              <legend class="filter-group__title">Reino</legend>
-              <div class="filter-group__options" id="kingdomFilters">
-                <label class="filter-option">
-                  <input type="checkbox" name="kingdom" value="Animalia" />
-                  Animalia
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="kingdom" value="Plantae" />
-                  Plantae
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="kingdom" value="Fungi" />
-                  Fungi
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset class="filter-group">
-              <legend class="filter-group__title">Grupo taxonómico</legend>
-              <div class="filter-group__options" id="taxonGroupFilters">
-                <label class="filter-option">
-                  <input type="checkbox" name="taxonGroup" value="Mammalia" />
-                  Mamíferos
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="taxonGroup" value="Aves" />
-                  Aves
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="taxonGroup" value="Reptilia" />
-                  Reptiles
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="taxonGroup" value="Insecta" />
-                  Insectos
-                </label>
-              </div>
-            </fieldset>
-
-            <fieldset class="filter-group">
-              <legend class="filter-group__title">Hábitat / Región</legend>
-              <div class="filter-group__options" id="habitatFilters">
-                <label class="filter-option">
-                  <input type="checkbox" name="habitat" value="terrestrial" />
-                  Terrestre
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="habitat" value="marine" />
-                  Marino
-                </label>
-                <label class="filter-option">
-                  <input type="checkbox" name="habitat" value="freshwater" />
-                  Agua dulce
-                </label>
-              </div>
-            </fieldset>
-          </form>
-        </aside>
-
-        <!-- ==================== RESULTADOS ==================== -->
-        <section class="explorer__results" aria-label="Resultados de especies">
-          <div class="results-header">
-            <div class="active-filters" id="activeFilters" aria-live="polite"></div>
-          </div>
-
-          <div
-            class="catalog-grid"
-            id="catalogGrid"
-            aria-live="polite"
-            aria-busy="false"
-          >
-
-            <!-- ---- Estado inicial / placeholder (visible por defecto en Fase 1) ---- -->
-            <div class="state-panel" id="initialState">
-              <svg class="state-panel__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <path d="M12 2C8 6 4 10 4 15a8 8 0 0016 0c0-5-4-9-8-13z"></path>
-              </svg>
-              <h3 class="state-panel__title">Empieza a explorar</h3>
-              <p class="state-panel__description">
-                Busca una especie por nombre o usa los filtros para descubrir la biodiversidad.
-              </p>
-            </div>
-
-            <!-- ---- Skeletons de carga (ocultos por defecto, los activa JS en Fase 2+) ---- -->
-            <template id="skeletonTemplate">
-              <div class="skeleton-card" aria-hidden="true">
-                <div class="skeleton-card__media"></div>
-                <div class="skeleton-card__body">
-                  <div class="skeleton-line skeleton-line--w60"></div>
-                  <div class="skeleton-line skeleton-line--w40"></div>
-                  <div class="skeleton-line skeleton-line--w80"></div>
-                </div>
-              </div>
-            </template>
-
-            <!-- ---- Empty state (sin coincidencias), oculto por defecto ---- -->
-            <div class="state-panel" id="emptyState" hidden>
-              <svg class="state-panel__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <h3 class="state-panel__title">Sin coincidencias</h3>
-              <p class="state-panel__description">
-                No encontramos especies para tu búsqueda. Intenta con otro nombre o ajusta los filtros.
-              </p>
-            </div>
-
-            <!-- ---- Error state, oculto por defecto ---- -->
-            <div class="state-panel state-panel--error" id="errorState" hidden>
-              <svg class="state-panel__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-              <h3 class="state-panel__title">Algo salió mal</h3>
-              <p class="state-panel__description" id="errorMessage">
-                No pudimos conectar con el servicio de especies. Revisa tu conexión e intenta de nuevo.
-              </p>
-              <button type="button" class="state-panel__retry-btn" id="retryButton">Reintentar</button>
-            </div>
-
-            <!-- Las species-card reales se insertan aquí dinámicamente en Fase 2+ -->
-          </div>
-
-          <!-- Template de card, para que JS clone en vez de construir HTML por concatenación -->
-          <template id="cardTemplate">
-            <article class="species-card">
-              <div class="species-card__media">
-                <img class="species-card__img" src="" alt="" loading="lazy" />
-                <button type="button" class="species-card__favorite" aria-pressed="false" aria-label="Guardar en favoritos">
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 21s-6.5-4.35-9.5-8.5C.5 9.5 2 5 6 5c2 0 3.5 1.2 4 2.5C10.5 6.2 12 5 14 5c4 0 5.5 4.5 3.5 7.5C18.5 16.65 12 21 12 21z" stroke-width="2"></path>
-                  </svg>
-                </button>
-              </div>
-              <div class="species-card__body">
-                <div class="species-card__taxonomy">
-                  <span class="taxon-badge species-card__kingdom"></span>
-                </div>
-                <h3 class="species-card__common-name"></h3>
-                <p class="species-card__scientific-name"></p>
-                <div class="species-card__footer">
-                  <button type="button" class="species-card__detail-btn">Ver detalle</button>
-                </div>
-              </div>
-            </article>
-          </template>
-        </section>
-
-      </div>
-    </div>
-  </main>
-
-  <!-- ==================== MODAL DE DETALLE ==================== -->
-  <dialog class="species-dialog" id="speciesDialog" aria-labelledby="dialogSpeciesName">
-    <div class="species-dialog__inner">
-      <div class="species-dialog__media">
-        <img class="species-dialog__img" id="dialogImage" src="" alt="" />
-        <button type="button" class="species-dialog__close" id="dialogClose" aria-label="Cerrar detalle">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-      <div class="species-dialog__body">
-        <div class="species-dialog__names">
-          <h2 id="dialogSpeciesName">Nombre común</h2>
-          <p class="species-dialog__scientific-name" id="dialogScientificName">Nombre científico</p>
-        </div>
-
-        <div class="species-dialog__section">
-          <h3 class="species-dialog__section-title">Descripción</h3>
-          <p id="dialogDescription">—</p>
-        </div>
-
-        <div class="species-dialog__section">
-          <h3 class="species-dialog__section-title">Taxonomía</h3>
-          <dl class="taxonomy-list" id="dialogTaxonomy">
-            <dt>Reino</dt><dd id="dialogKingdom">—</dd>
-            <dt>Filo</dt><dd id="dialogPhylum">—</dd>
-            <dt>Clase</dt><dd id="dialogClass">—</dd>
-            <dt>Orden</dt><dd id="dialogOrder">—</dd>
-            <dt>Familia</dt><dd id="dialogFamily">—</dd>
-            <dt>Género</dt><dd id="dialogGenus">—</dd>
-          </dl>
-        </div>
-
-        <div class="species-dialog__section">
-          <h3 class="species-dialog__section-title">Distribución / Hábitat</h3>
-          <p id="dialogHabitat">—</p>
-        </div>
-      </div>
-    </div>
-  </dialog>
+  <main id="app" class="page" tabindex="-1"></main>
 
   <footer class="site-footer">
     <div class="site-footer__inner">
-      <p class="site-footer__credit">Cladum — proyecto de portafolio de Jonathan Ramírez</p>
-      <p class="site-footer__source">
-        Datos de <a href="https://www.gbif.org/" target="_blank" rel="noopener">GBIF.org</a>
-      </p>
+      <div class="site-footer__key">
+        <h2 class="site-footer__title">Clave de procedencia</h2>
+        <div class="site-footer__items">
+          <div class="site-footer__item">
+            <span class="pill pill--raised"><span class="pill__dot" aria-hidden="true"></span>Verificado · GBIF</span>
+            Cotejado con la respuesta de la API; no garantiza ausencia de errores.
+          </div>
+          <div class="site-footer__item">
+            <span class="pill pill--raised"><span class="pill__ring" aria-hidden="true"></span>Fuente externa</span>
+            Contenido con procedencia y derechos identificados.
+          </div>
+          <div class="site-footer__item">
+            <span class="pill pill--outline"><span class="pill__dash" aria-hidden="true"></span>Sin dato</span>
+            Información no disponible o no cotejada.
+          </div>
+        </div>
+      </div>
+      <div class="site-footer__meta">
+        <span>Cladum · Atlas de precisión</span>
+        <span>Datos: <a href="https://www.gbif.org" target="_blank" rel="noopener">GBIF.org<span class="u-visually-hidden"> (se abre en una pestaña nueva)</span></a></span>
+      </div>
     </div>
   </footer>
 
-  <!-- El JS modular se conecta a partir de la Fase 2 -->
-  <!-- <script type="module" src="js/main.js"></script> -->
+  <!-- Regiones vivas: siempre presentes para que los lectores de pantalla anuncien sus cambios -->
+  <div class="toast-region" data-toast role="status" aria-live="polite"></div>
+  <p class="u-visually-hidden" data-announcer role="status" aria-live="polite"></p>
 </body>
 </html>

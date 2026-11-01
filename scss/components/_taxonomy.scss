@@ -1,0 +1,103 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+// Índice taxonómico lateral
+.tax-index {
+  @include card;
+  padding: 20px 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+  }
+
+  &__title { font-size: 15px; font-weight: 700; }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__link {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 2px 8px;
+    padding: 10px 14px;
+    border-radius: 16px;
+    color: var(--ink);
+    text-decoration: none;
+    transition: background-color $dur-base, color $dur-base;
+
+    &:hover { background: var(--soft-2); color: var(--ink); }
+
+    &[aria-current="page"] {
+      background: var(--ink);
+      color: var(--on-ink);
+
+      .tax-index__rank,
+      .tax-index__key { color: var(--on-ink-muted); }
+    }
+  }
+
+  &__rank { font-size: 12px; color: var(--muted); }
+  &__key { font: 400 11px $font-mono; color: var(--muted); }
+
+  &__name {
+    grid-column: 1 / -1;
+    font-size: 17px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+
+    &--italic { font-style: italic; }
+  }
+
+  &__note {
+    padding: 4px 10px 0;
+    font-size: 13px;
+    line-height: 19px;
+    color: var(--muted);
+  }
+
+  &__api { align-self: flex-start; margin-left: 8px; }
+}
+
+// Pestañas segmentadas tipo iOS
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px;
+  border-radius: $radius-pill;
+  background: var(--soft);
+  align-self: flex-start;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 20px;
+    border: 0;
+    border-radius: $radius-pill;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background-color $dur-base, box-shadow $dur-base;
+
+    &[aria-pressed="true"],
+    &[aria-selected="true"] {
+      background: var(--surface);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
+      font-weight: 600;
+    }
+  }
+}
