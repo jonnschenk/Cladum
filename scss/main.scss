@@ -1,24 +1,23 @@
-// ==========================================================================
-// MAIN.SCSS — orquestador
-// El orden importa: base primero (tokens y reset), luego layout,
-// luego components. Así cada capa puede sobreescribir tokens
-// heredados de la anterior sin especificidad-wars.
-//
-// Compila a css/main.css (archivo generado, no editar a mano).
-// Ver package.json → "build:css" / "watch:css".
-// ==========================================================================
+// ─────────────────────────────────────────────
+// Cladum · hoja de estilos principal
+// Compilar:  npm run sass:watch   (desarrollo)
+//            npm run build        (producción)
+// ─────────────────────────────────────────────
 
-@use 'base/variables';
-@use 'base/reset';
-@use 'base/typography';
+@use "abstracts/tokens";
+@use "base/base";
 
-@use 'layout/header';
-@use 'layout/grid';
-@use 'layout/footer';
+@use "layout/header";
+@use "layout/page";
 
-@use 'components/search-bar';
-@use 'components/card';
-@use 'components/filters';
-@use 'components/modal';
-@use 'components/skeleton';
-@use 'components/states';
+@use "components/buttons";
+@use "components/pills";
+@use "components/cards";
+@use "components/search";
+@use "components/taxonomy";
+@use "components/states";
+
+@use "views/search" as search-view;
+@use "views/species";
+@use "views/occurrences";
+@use "views/saved";

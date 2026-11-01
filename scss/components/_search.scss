@@ -1,0 +1,182 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+
+  &__box {
+    position: relative;
+    flex: 1 1 460px;
+    min-width: 0;
+  }
+
+  &__field {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 68px;
+    padding: 0 10px 0 24px;
+    border-radius: $radius-pill;
+    background: var(--surface);
+    box-shadow: 0 0 0 1px var(--border), 0 24px 60px rgba(0, 0, 0, 0.06);
+    color: var(--muted);
+    transition: box-shadow $dur-base;
+
+    &:focus-within {
+      box-shadow: 0 0 0 2px var(--ink), 0 24px 60px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__label { font-size: 12px; color: var(--muted); }
+
+  &__input {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+
+    &::placeholder { color: var(--muted); font-weight: 400; }
+    &::-webkit-search-cancel-button { display: none; }
+  }
+
+  &__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  // Variante compacta (filtro de la colección guardada)
+  &--compact { max-width: 440px; }
+  &--compact &__field { height: 56px; }
+}
+
+// Sugerencias (combobox ARIA). La pista va fuera del listbox.
+.suggest {
+  @include card($radius-lg);
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 15;
+  padding: 8px;
+  animation: suggest-in $dur-base $ease-out;
+
+  &[hidden] { display: none; }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 48px;
+    padding: 8px 14px;
+    border-radius: $radius-sm;
+    cursor: pointer;
+
+    &[aria-selected="true"],
+    &:hover { background: var(--soft-2); }
+  }
+
+  &__name { font-size: 17px; }
+  &__meta { font-size: 13px; color: var(--muted); }
+  &__hint { padding: 6px 14px 4px; font-size: 12px; color: var(--muted); }
+}
+
+@keyframes suggest-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+
+// Select con forma de píldora (nativo, accesible)
+.select {
+  position: relative;
+  display: inline-flex;
+
+  &__control {
+    appearance: none;
+    height: 52px;
+    padding: 0 44px 0 20px;
+    border: 0;
+    border-radius: $radius-pill;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform $dur-slow $ease-spring;
+
+    &:hover { transform: translateY(-1px); }
+  }
+
+  &__chevron {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--ink);
+  }
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 52px;
+  padding: 0 20px;
+  border-radius: $radius-pill;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &__input {
+    appearance: none;
+    width: 36px;
+    height: 22px;
+    margin: 0;
+    border-radius: 11px;
+    background: var(--soft);
+    position: relative;
+    cursor: pointer;
+    transition: background-color $dur-base;
+
+    &::after {
+      content: "";
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      transition: transform $dur-slow $ease-spring;
+    }
+
+    &:checked { background: var(--ok); }
+    &:checked::after { transform: translateX(14px); }
+  }
+}

@@ -1,0 +1,104 @@
+// ─────────────────────────────────────────────
+// Tokens de Cladum
+// Derivados del portafolio (nathan-portafolio.web.app):
+// neutros fríos, acento pizarra, vidrio y radios amplios.
+// Los colores viven en custom properties para el modo oscuro.
+// ─────────────────────────────────────────────
+
+// Breakpoints
+$bp-sm: 600px;
+$bp-md: 900px;
+
+// Radios
+$radius-sm: 12px;
+$radius-md: 18px;
+$radius-lg: 24px;
+$radius-xl: 28px;
+$radius-pill: 999px;
+
+// Movimiento
+$ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+$ease-out: cubic-bezier(0.2, 0, 0, 1);
+$dur-fast: 150ms;
+$dur-base: 220ms;
+$dur-slow: 300ms;
+
+// Tipografía
+$font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+$font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+// Layout
+$container: 1280px;
+$gutter: 32px;
+$gutter-sm: 16px;
+$sidebar-w: 280px;
+
+:root {
+  --bg: #eef1f2;
+  --surface: #ffffff;
+  --soft: #e3e8ea;
+  --soft-2: #f4f6f7;
+  --ink: #0b1220;
+  --muted: #5d6771;
+  --border: #d5dbdf;
+
+  --accent: #4a5d6c;
+  --accent-text: #394b59;
+  --accent-wash: rgba(74, 93, 108, 0.1);
+
+  --ok: #22a35a;
+  --ok-ring: rgba(34, 163, 90, 0.16);
+  --ok-text: #1a7f45;
+  --warn: #a4471f;
+  --warn-wash: #f6ece6;
+  --danger: #b42318;
+
+  --on-ink: #ffffff;
+  --on-ink-muted: #c9d1d6;
+
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.4),
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 8px 32px rgba(15, 23, 42, 0.08);
+  --card-shadow: 0 0 0 1px rgba(15, 23, 42, 0.05), 0 24px 60px rgba(0, 0, 0, 0.06);
+  --raised-shadow: 0 0 0 1px rgba(15, 23, 42, 0.08), 0 4px 14px rgba(15, 23, 42, 0.06);
+  --chip-bg: rgba(255, 255, 255, 0.7);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0b1016;
+  --surface: #141b23;
+  --soft: #24303b;
+  --soft-2: #1a232d;
+  --ink: #eef1f2;
+  --muted: #9aa5ae;
+  --border: #2a3540;
+
+  --accent: #9fb3c2;
+  --accent-text: #b8c8d4;
+  --accent-wash: rgba(159, 179, 194, 0.14);
+
+  --ok: #3ccf7a;
+  --ok-ring: rgba(60, 207, 122, 0.18);
+  --ok-text: #5fd893;
+  --warn: #f0a07a;
+  --warn-wash: #2a1d17;
+  --danger: #f97066;
+
+  --on-ink: #0b1220;
+  --on-ink-muted: #3a4652;
+
+  --glass-bg: rgba(20, 27, 35, 0.62);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 60px rgba(0, 0, 0, 0.35);
+  --raised-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 4px 14px rgba(0, 0, 0, 0.3);
+  --chip-bg: rgba(255, 255, 255, 0.06);
+
+  color-scheme: dark;
+}

@@ -1,0 +1,134 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+
+  &__end { margin-left: auto; }
+}
+
+.records {
+  overflow-x: auto;
+
+  &__head,
+  &__cols {
+    display: grid;
+    grid-template-columns: 130px minmax(150px, 1.4fr) 110px minmax(120px, 1fr) 120px 130px;
+    gap: 16px;
+    align-items: center;
+    min-width: 840px;
+  }
+
+  &__head {
+    padding: 10px 20px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 860px;
+  }
+
+  &__row {
+    width: 100%;
+    padding: 14px 20px;
+    border: 0;
+    border-radius: $radius-md;
+    background: transparent;
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background-color $dur-base, box-shadow $dur-base;
+
+    &:hover { background: var(--soft-2); }
+
+    &[aria-pressed="true"] {
+      background: var(--soft-2);
+      box-shadow: 0 0 0 1.5px var(--ink);
+    }
+  }
+
+  &__id,
+  &__uncertainty { font: 400 13px $font-mono; }
+  &__date,
+  &__observer { font-size: 14px; }
+
+  &__place { display: flex; flex-direction: column; gap: 2px; }
+  &__country { font-weight: 600; }
+  &__sub { font-size: 13px; color: var(--muted); }
+  &__basis { font-size: 12px; color: var(--muted); }
+
+  &__quality {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__issues {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--warn);
+
+    &--none { color: var(--ok-text); }
+  }
+
+}
+
+// Botón "Cargar más" bajo una lista paginada
+.load-more {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 6px;
+}
+
+.record-detail {
+  &__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__id {
+    font: 500 28px/1.2 $font-mono;
+    letter-spacing: -0.02em;
+    overflow-wrap: anywhere;
+  }
+
+  &__cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+    column-gap: 40px;
+  }
+
+  &__grid { gap: 24px 40px; }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__issues { display: flex; flex-wrap: wrap; gap: 8px; }
+  &__note { font-size: 13px; line-height: 19px; color: var(--muted); }
+
+  &__source {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__sub {
+    font-size: 16px;
+    font-weight: 700;
+  }
+}

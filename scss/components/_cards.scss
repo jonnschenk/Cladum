@@ -1,0 +1,137 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+.card {
+  @include card;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  @include down($bp-sm) { padding: 20px; }
+
+  &--xl { border-radius: $radius-xl; padding: 32px; gap: 28px; }
+  &--soft { background: var(--soft); box-shadow: none; }
+  &--flush { padding: 10px; }
+  &--tight { gap: 12px; }
+
+  &__head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+
+    &--top { align-items: flex-start; }
+  }
+
+  &__title {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  &__lead {
+    font-size: 24px;
+    line-height: 30px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  &__text {
+    font-size: 15px;
+    line-height: 24px;
+
+    &--muted { color: var(--muted); }
+  }
+
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__action { align-self: flex-start; }
+}
+
+.tile {
+  background: var(--soft-2);
+  border-radius: $radius-md;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__label { font-size: 12px; font-weight: 600; color: var(--muted); }
+  &__value { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  &__check { display: inline-flex; color: var(--ok-text); }
+}
+
+// Lista de definiciones tipo "inset grouped" de iOS
+.def-list {
+  &__row {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 16px;
+    align-items: baseline;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--soft);
+
+    &:last-child { border-bottom: 0; }
+
+    @include down($bp-sm) {
+      grid-template-columns: 1fr;
+      gap: 2px;
+    }
+  }
+
+  &__term { font-size: 14px; color: var(--muted); }
+
+  &__desc {
+    font-size: 16px;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+
+    &--mono { font-family: $font-mono; font-size: 15px; }
+  }
+
+  // Texto secundario en línea (idioma, código de la API)
+  &__aside { font-weight: 400; color: var(--muted); }
+  &__code { font: 400 12px $font-mono; color: var(--muted); }
+
+  &__note {
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    line-height: 19px;
+    font-weight: 400;
+    color: var(--muted);
+  }
+}
+
+.callout {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border-radius: $radius-md;
+
+  &--warn { background: var(--warn-wash); }
+
+  &__icon {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--warn);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__body { display: block; }
+  &__title { display: block; font-size: 15px; font-weight: 600; color: var(--warn); }
+  &__text { display: block; font-size: 14px; line-height: 21px; }
+}
