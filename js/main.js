@@ -4,14 +4,15 @@
 // ─────────────────────────────────────────────
 
 import { startRouter } from './router.js';
-import { getState, setState, subscribe } from './state/store.js';
+import { setState, subscribe } from './state/store.js';
 import { initHeader, updateNav } from './handlers/headerHandlers.js';
 import { isAbort } from './utils/dom.js';
 import { renderSearchView } from './ui/views/searchView.js';
 import { renderSpeciesView } from './ui/views/speciesView.js';
 import { renderOccurrencesView } from './ui/views/occurrencesView.js';
 import { renderSavedView } from './ui/views/savedView.js';
-import { stateBlock } from './ui/components.js';
+import { renderAboutView } from './ui/views/aboutView.js';
+import { renderError } from './ui/states.js';
 
 const app = document.getElementById('app');
 
@@ -20,36 +21,49 @@ const views = {
   species: renderSpeciesView,
   occurrences: renderOccurrencesView,
   saved: renderSavedView,
+  about: renderAboutView,
 };
 
 let controller = null;
+// Vista en pantalla. Si expone update(), los cambios de parámetros de esa misma
+// vista (p. ej. un filtro) se aplican en su sitio, sin redibujar ni mover el foco.
+let current = null;
+
+const sameView = (route) => current?.update && current.name === route.name && current.key === route.key;
 
 async function onRoute(route) {
-  // Cancela las consultas de la vista anterior
+  // Cancela las consultas de la vista anterior (o de la actualización anterior)
   controller?.abort();
   controller = new AbortController();
-
   setState({ route });
+
+  if (sameView(route)) {
+    try {
+      await current.update(route, { signal: controller.signal });
+    } catch (error) {
+      if (!isAbort(error)) console.error(error);
+    }
+    return;
+  }
+
+  current = null;
   document.title = 'Cladum · Explorador de biodiversidad';
   window.scrollTo({ top: 0, behavior: 'instant' });
 
   try {
-    await views[route.name](app, route, { signal: controller.signal });
+    const view = await views[route.name](app, route, { signal: controller.signal });
+    if (controller.signal.aborted) return;
+    current = { name: route.name, key: route.key, update: view?.update };
     // Mueve el foco al título de la nueva vista (lectores de pantalla)
     app.querySelector('h1[tabindex="-1"]')?.focus({ preventScroll: true });
   } catch (error) {
     if (isAbort(error)) return;
     console.error(error);
-    app.innerHTML = stateBlock({
-      type: 'error',
-      title: 'Algo salió mal',
-      text: 'Recarga la página para intentarlo de nuevo.',
-      level: 1,
-    });
+    renderError(app, error, { onRetry: () => onRoute(route) });
+    app.querySelector('h1[tabindex="-1"]')?.focus({ preventScroll: true });
   }
 }
 
 initHeader();
-subscribe((state) => updateNav(state.route?.name, state.lastSpecies));
-updateNav(null, getState().lastSpecies);
+subscribe((state) => updateNav(state.route?.name));
 startRouter(onRoute);

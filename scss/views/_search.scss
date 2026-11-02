@@ -17,11 +17,11 @@
   }
 
   &__name {
-    font-size: clamp(40px, 6vw, 64px);
+    font-size: $display-result;
     line-height: 1;
   }
 
-  &__author { font-size: 17px; color: var(--muted); }
+  &__author { font-size: $text-md; color: var(--muted); }
 
   &__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -45,11 +45,11 @@
     gap: 6px;
   }
 
-  &__common { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
-  &__lang { font-size: 14px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
-  &__family { font-size: 20px; font-weight: 600; }
+  &__common { font-size: $text-3xl; font-weight: 700; letter-spacing: -0.02em; }
+  &__lang { font-size: $text-xs; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+  &__family { font-size: $text-2xl; font-weight: 600; }
   &__sep { font-weight: 400; color: var(--muted); }
-  &__note { font-size: 13px; line-height: 19px; color: var(--muted); }
+  &__note { font-size: $text-2xs; line-height: 1.55; color: var(--muted); }
 }
 
 // Bloque de resultados secundarios
@@ -80,12 +80,12 @@
     @include down($bp-sm) { grid-template-columns: minmax(0, 1fr) auto; }
   }
 
-  &__name { font-size: 19px; display: block; }
-  &__author { font-size: 14px; color: var(--muted); }
-  &__meta { font-size: 13px; color: var(--muted); }
+  &__name { font-size: $text-xl; display: block; }
+  &__author { font-size: $text-xs; color: var(--muted); }
+  &__meta { font-size: $text-2xs; color: var(--muted); }
 
   &__key {
-    font: 400 12px $font-mono;
+    font: 400 $text-2xs $font-mono;
     color: var(--muted);
 
     @include down($bp-sm) { display: none; }

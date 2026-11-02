@@ -16,8 +16,13 @@
 @use "components/search";
 @use "components/taxonomy";
 @use "components/states";
+@use "components/loaders";
+@use "components/feedback";
+@use "components/motion";
 
 @use "views/search" as search-view;
+@use "views/home";
 @use "views/species";
 @use "views/occurrences";
 @use "views/saved";
+@use "views/about";

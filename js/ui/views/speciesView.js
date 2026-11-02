@@ -1,18 +1,19 @@
 // Vista: Ficha de especie
 
 import {
-  getSpecies, getVernacularNames, pickVernacular, getPhoto, searchOccurrences, apiUrl, GbifError,
+  getSpecies, getVernacularNames, pickVernacular, getPhotos, searchOccurrences, apiUrl,
 } from '../../services/gbif.js';
-import { bindSaveButtons } from '../../handlers/feedback.js';
+import { bindSaveButtons, announce } from '../../handlers/feedback.js';
 import { isFavorite } from '../../state/favorites.js';
 import { setState } from '../../state/store.js';
-import { buildHash } from '../../router.js';
+import { buildHash, navigate } from '../../router.js';
 import { esc, safeUrl, isAbort } from '../../utils/dom.js';
-import { formatNumber, rankLabel, statusLabel, licenseLabel, isItalicRank } from '../../utils/format.js';
+import { formatNumber, rankLabel, statusLabel, licenseLabel, basisLabel, isItalicRank } from '../../utils/format.js';
 import { GENERALIZED_UNCERTAINTY } from '../../config.js';
 import { renderTaxIndex } from '../taxIndex.js';
+import { renderLoading, renderError, withSlowNotice } from '../states.js';
 import {
-  icons, verified, external, noData, taxonName, apiLink, externalLink, stateBlock, skeletonPage, saveButton,
+  icons, verified, external, noData, taxonName, apiLink, externalLink, saveButton,
 } from '../components.js';
 
 export const isGeneralized = (record) =>
@@ -31,38 +32,155 @@ function breadcrumb(taxon) {
     </nav>`;
 }
 
-function photoCard(photo, name, failed = false) {
-  if (!photo || !safeUrl(photo.url)) {
-    const message = failed
-      ? 'No se pudo cargar la fotografía desde su fuente original.'
-      : 'No hay fotografía documentada en GBIF para este taxón.';
-    return `
-      <figure class="photo-card" id="fotografia" tabindex="-1">
-        <div class="photo-card__empty">${icons.image(28)}<span>${message}</span>${noData()}</div>
-      </figure>`;
+// ── Galería de fotografías ──────────────────
+
+// iNaturalist publica cada foto en varios tamaños (…/photos/123/original.jpg → small.jpg).
+// Para otras fuentes se usa la URL tal cual.
+const INAT_SIZE = /^(https:\/\/(?:inaturalist-open-data\.s3\.amazonaws\.com|static\.inaturalist\.org)\/photos\/\d+\/)(?:original|large|medium|small|square)(\.\w+)(\?.*)?$/;
+
+function sizedUrl(url, size) {
+  const safe = safeUrl(url);
+  return safe.replace(INAT_SIZE, `$1${size}$2$3`);
+}
+
+const photoAlt = (photo, name) => `Fotografía de ${name}${photo.creator ? `, por ${photo.creator}` : ''}`;
+
+function photoStage(photo, name, failed = false) {
+  if (failed) {
+    return `<div class="photo-card__empty">${icons.image(28)}<span>No se pudo cargar esta fotografía desde su fuente original.</span>${noData()}</div>`;
   }
+  return `
+    <img class="photo-card__img" src="${esc(sizedUrl(photo.url, 'large'))}" decoding="async"
+      alt="${esc(photoAlt(photo, name))}" data-photo>`;
+}
+
+function photoCaption(photo) {
   const license = licenseLabel(photo.license);
   const originalUrl = photo.references || `https://www.gbif.org/occurrence/${photo.occurrenceKey}`;
   return `
-    <figure class="photo-card" id="fotografia" tabindex="-1">
-      <img class="photo-card__img" src="${esc(safeUrl(photo.url))}" loading="lazy" decoding="async"
-        alt="Fotografía de ${esc(name)}${photo.creator ? `, por ${esc(photo.creator)}` : ''}" data-photo>
-      <figcaption class="photo-card__caption">
-        <div class="photo-card__credit">
-          <span class="photo-card__author">${esc(photo.creator || 'Autoría no indicada')} <span class="photo-card__meta">${[photo.publisher, license].filter(Boolean).map(esc).join(' · ')}</span></span>
-          ${externalLink(originalUrl, 'Ver original')}
-        </div>
-        <div class="photo-card__tags">
-          ${external('Fuente externa · vía GBIF')}
-          <span class="pill pill--mono pill--muted">Registro GBIF:${esc(photo.occurrenceKey)}</span>
-        </div>
-      </figcaption>
-    </figure>`;
+    <div class="photo-card__credit">
+      <span class="photo-card__author">${esc(photo.creator || 'Autoría no indicada')} <span class="photo-card__meta">${[photo.publisher, license].filter(Boolean).map(esc).join(' · ')}</span></span>
+      ${externalLink(originalUrl, 'Ver original')}
+    </div>
+    <div class="photo-card__tags">
+      ${external('Fuente externa · vía GBIF')}
+      <span class="pill">${esc(basisLabel(photo.basisOfRecord))}</span>
+      <span class="pill pill--mono pill--muted">Registro GBIF:${esc(photo.occurrenceKey)}</span>
+    </div>`;
+}
+
+const photoRights = (photo) =>
+  photo?.license ? apiLink(photo.license, `Fuente externa · ${licenseLabel(photo.license)}`) : noData('Sin licencia indicada');
+
+function photoThumb(photo, index, total, selected) {
+  return `
+    <button class="photo-card__thumb" type="button" aria-pressed="${selected}" tabindex="${selected ? 0 : -1}"
+      data-photo-index="${index}" aria-label="Fotografía ${index + 1} de ${total}${photo.creator ? `, por ${esc(photo.creator)}` : ''}">
+      <img class="photo-card__thumb-img" src="${esc(sizedUrl(photo.url, 'small'))}" alt="" loading="lazy" decoding="async">
+    </button>`;
+}
+
+/**
+ * La imagen empieza transparente sobre el fondo del marco (el placeholder)
+ * y aparece con un fundido cuando termina de cargar.
+ */
+function revealOnLoad(img) {
+  const show = () => img.classList.add('is-loaded');
+  if (img.complete && img.naturalWidth) show();
+  else img.addEventListener('load', show, { once: true });
+}
+
+/** Foto principal + miniaturas. El crédito vive junto a la imagen y cambia con ella. */
+function photoGallery(photos, name) {
+  if (!photos.length) {
+    return `
+      <section class="photo-card" aria-label="Fotografía">
+        <div class="photo-card__empty">${icons.image(28)}<span>No hay fotografía documentada en GBIF para este taxón.</span>${noData()}</div>
+      </section>`;
+  }
+  const total = photos.length;
+  return `
+    <section class="photo-card" aria-label="${total > 1 ? `Fotografías (${total})` : 'Fotografía'}" data-gallery>
+      <figure class="photo-card__figure">
+        <div class="photo-card__stage" data-photo-stage>${photoStage(photos[0], name)}</div>
+        ${total > 1 ? `<span class="pill photo-card__counter" aria-hidden="true"><span data-photo-current>1</span>&nbsp;de ${total}</span>` : ''}
+        <figcaption class="photo-card__caption" data-photo-caption>${photoCaption(photos[0])}</figcaption>
+      </figure>
+      ${total > 1 ? `
+        <div class="photo-card__thumbs" role="group" aria-label="Elegir fotografía" data-photo-thumbs>
+          ${photos.map((p, i) => photoThumb(p, i, total, i === 0)).join('')}
+        </div>` : ''}
+    </section>`;
+}
+
+/** Selección con clic o con flechas / Inicio / Fin (tabindex itinerante). */
+function bindGallery(root, photos, name) {
+  const gallery = root.querySelector('[data-gallery]');
+  if (!gallery) return;
+  const stage = gallery.querySelector('[data-photo-stage]');
+  const caption = gallery.querySelector('[data-photo-caption]');
+  const current = gallery.querySelector('[data-photo-current]');
+  const rights = root.querySelector('[data-photo-rights]');
+  const thumbs = [...gallery.querySelectorAll('[data-photo-index]')];
+
+  const watchImage = () => {
+    const img = stage.querySelector('[data-photo]');
+    if (!img) return;
+    img.addEventListener('error', () => {
+      stage.innerHTML = photoStage(null, name, true);
+    }, { once: true });
+    revealOnLoad(img);
+  };
+
+  const select = (index, { focus = false } = {}) => {
+    const photo = photos[index];
+    stage.innerHTML = photoStage(photo, name);
+    watchImage();
+    caption.innerHTML = photoCaption(photo);
+    if (current) current.textContent = String(index + 1);
+    if (rights) rights.innerHTML = photoRights(photo);
+    thumbs.forEach((thumb, i) => {
+      thumb.setAttribute('aria-pressed', String(i === index));
+      thumb.tabIndex = i === index ? 0 : -1;
+    });
+    if (focus) thumbs[index].focus();
+    thumbs[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    announce(`${photoAlt(photo, name)}. ${index + 1} de ${photos.length}`);
+  };
+
+  watchImage();
+
+  gallery.querySelectorAll('.photo-card__thumb-img').forEach(revealOnLoad);
+
+  // Si una miniatura no carga, queda el ícono; el botón sigue funcionando
+  gallery.querySelectorAll('.photo-card__thumb-img').forEach((img) =>
+    img.addEventListener('error', () => img.replaceWith(document.createRange().createContextualFragment(icons.image(20))), { once: true }),
+  );
+
+  gallery.querySelector('[data-photo-thumbs]')?.addEventListener('click', (event) => {
+    const thumb = event.target.closest('[data-photo-index]');
+    if (thumb) select(Number(thumb.dataset.photoIndex));
+  });
+
+  gallery.querySelector('[data-photo-thumbs]')?.addEventListener('keydown', (event) => {
+    const index = thumbs.indexOf(document.activeElement);
+    if (index < 0) return;
+    const last = thumbs.length - 1;
+    const next = {
+      ArrowRight: index === last ? 0 : index + 1,
+      ArrowLeft: index === 0 ? last : index - 1,
+      Home: 0,
+      End: last,
+    }[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    select(next, { focus: true });
+  });
 }
 
 function identityCard(taxon, vernacular) {
   return `
-    <section class="card" id="identidad" tabindex="-1" aria-labelledby="identity-title">
+    <section class="card" aria-labelledby="identity-title">
       <div class="card__head">
         <h2 class="card__title" id="identity-title">Identidad y nomenclatura</h2>
         ${verified()}
@@ -85,7 +203,7 @@ function identityCard(taxon, vernacular) {
 function occurrencesCard(taxon, occ) {
   if (!occ) {
     return `
-      <section class="card card--xl" id="ocurrencias" tabindex="-1" aria-labelledby="occ-title">
+      <section class="card card--xl" aria-labelledby="occ-title">
         <div class="card__head"><h2 class="eyebrow" id="occ-title">Ocurrencias documentadas</h2>${noData()}</div>
         <p class="card__text card__text--muted">No se pudo consultar el recuento de ocurrencias.</p>
       </section>`;
@@ -93,7 +211,7 @@ function occurrencesCard(taxon, occ) {
   const generalized = occ.results.filter(isGeneralized).length;
   const issues = occ.results.filter((r) => r.issues?.length).length;
   return `
-    <section class="card card--xl" id="ocurrencias" tabindex="-1" aria-labelledby="occ-title">
+    <section class="card card--xl" aria-labelledby="occ-title">
       <div class="card__head">
         <h2 class="eyebrow" id="occ-title">Ocurrencias documentadas</h2>
         ${verified()}
@@ -102,9 +220,13 @@ function occurrencesCard(taxon, occ) {
         <div class="split-row__main">
           <p class="count"><span class="count__num">${formatNumber(occ.count)}</span><span class="count__label">registros con coordenadas</span></p>
           <span class="split-row__code">taxon_key=${esc(taxon.key)} · has_coordinate=true</span>
-          <p class="split-row__note">Recuento de la consulta, no población ni total global de ejemplares.</p>
+          <p class="split-row__note">${occ.count
+            ? 'Recuento de la consulta, no población ni total global de ejemplares.'
+            : 'GBIF no tiene registros con coordenadas de este taxón. Puede haber registros sin ubicación precisa.'}</p>
         </div>
-        ${occ.count ? `<a class="btn btn--primary" href="${buildHash(`/especie/${taxon.key}/ocurrencias`)}">Ver registros ${icons.arrow(16)}</a>` : ''}
+        ${occ.count
+          ? `<a class="btn btn--primary" href="${buildHash(`/especie/${taxon.key}/ocurrencias`)}">Ver registros ${icons.arrow(16)}</a>`
+          : `<a class="btn btn--secondary" href="${buildHash(`/especie/${taxon.key}/ocurrencias`, { coords: '0' })}">Ver registros sin coordenadas ${icons.arrow(16)}</a>`}
       </div>
       ${generalized ? `
         <div class="callout callout--warn" role="note">
@@ -117,37 +239,35 @@ function occurrencesCard(taxon, occ) {
 
 export async function renderSpeciesView(app, route, { signal }) {
   const key = route.key;
-  app.innerHTML = breadcrumb(null) + skeletonPage();
+  renderLoading(app, 'species', { before: breadcrumb(null) });
 
   let taxon;
   try {
-    taxon = await getSpecies(key, { signal });
+    taxon = await withSlowNotice(getSpecies(key, { signal }), app);
   } catch (error) {
     if (isAbort(error)) return;
-    const notFound = error instanceof GbifError && error.status === 404;
-    app.innerHTML = breadcrumb(null) + stateBlock({
-      type: 'error',
-      title: notFound ? 'No encontramos ese taxón' : 'No se pudo consultar GBIF',
-      text: notFound ? `GBIF no tiene un registro con el identificador ${esc(key)}.` : 'Revisa tu conexión e inténtalo de nuevo.',
-      actions: `<a class="btn btn--primary" href="${buildHash(`/especie/${key}`)}">Reintentar</a>`,
-      level: 1,
+    app.innerHTML = `${breadcrumb(null)}<div data-error></div>`;
+    renderError(app.querySelector('[data-error]'), error, {
+      onRetry: () => navigate(`/especie/${key}`),
+      copy: { 'not-found': { title: 'No encontramos ese taxón', text: `GBIF no tiene un taxón con el identificador ${key}.` } },
+      actions: `<a class="btn btn--secondary" href="${buildHash('/')}">Ir a Explorar</a>`,
     });
     return;
   }
 
-  const [vernacularRes, photoRes, occRes] = await Promise.allSettled([
+  const [vernacularRes, photoRes, occRes] = await withSlowNotice(Promise.allSettled([
     getVernacularNames(key, { signal }),
-    getPhoto(key, { signal }),
+    getPhotos(key, { signal }),
     searchOccurrences({ taxonKey: key, hasCoordinate: true, limit: 3 }, { signal }),
-  ]);
+  ]), app);
   if (signal.aborted) return;
 
   const name = taxon.canonicalName || taxon.scientificName;
   const vernacular = vernacularRes.status === 'fulfilled' ? pickVernacular(vernacularRes.value) : null;
-  const photo = photoRes.status === 'fulfilled' ? photoRes.value : null;
+  const photos = photoRes.status === 'fulfilled' ? photoRes.value.filter((p) => safeUrl(p.url)) : [];
   const occ = occRes.status === 'fulfilled' ? occRes.value : null;
 
-  setState({ lastSpecies: { key: taxon.key, name } });
+  setState({ lastSpecies: { key: taxon.key, name, rank: taxon.rank } });
   document.title = `${name} · Cladum`;
 
   const synonymNote =
@@ -157,7 +277,7 @@ export async function renderSpeciesView(app, route, { signal }) {
 
   app.innerHTML = `
     ${breadcrumb(taxon)}
-    <div class="layout u-view-enter">
+    <div class="layout u-fade-in">
       <div class="layout__aside">${renderTaxIndex(taxon)}</div>
       <section class="layout__content" aria-labelledby="species-title">
         <header class="species-hero">
@@ -174,29 +294,22 @@ export async function renderSpeciesView(app, route, { signal }) {
 
         ${synonymNote}
 
-        <div class="segmented" role="group" aria-label="Ir a sección" data-sections>
-          <button class="segmented__btn" type="button" aria-pressed="true" data-target="identidad">Identidad</button>
-          <button class="segmented__btn" type="button" aria-pressed="false" data-target="fotografia">Fotografía</button>
-          <button class="segmented__btn" type="button" aria-pressed="false" data-target="ocurrencias">Ocurrencias</button>
-          <button class="segmented__btn" type="button" aria-pressed="false" data-target="fuentes">Fuentes</button>
-        </div>
-
         <div class="grid-auto grid-auto--start" style="--min:400px">
-          ${photoCard(photo, name)}
+          ${photoGallery(photos, name)}
           ${identityCard(taxon, vernacular)}
         </div>
 
         ${occurrencesCard(taxon, occ)}
 
-        <section class="grid-auto" id="fuentes" tabindex="-1" style="--min:300px" aria-label="Fuentes">
+        <section class="grid-auto" style="--min:300px" aria-label="Fuentes">
           <div class="source-links">
             <span class="eyebrow">Fuentes de identidad</span>
             ${apiLink(apiUrl(`/species/${taxon.key}/vernacularNames`, { limit: 100 }), `GBIF · especie ${taxon.key} y nombres vernáculos`)}
             ${apiLink(`https://www.gbif.org/species/${taxon.key}`, 'Ficha en GBIF.org')}
           </div>
           <div class="source-links">
-            <span class="eyebrow">Derechos del archivo</span>
-            ${photo?.license ? apiLink(photo.license, `Fuente externa · ${licenseLabel(photo.license)}`) : noData('Sin fotografía')}
+            <span class="eyebrow">Derechos de la fotografía mostrada</span>
+            <span class="source-links__item" data-photo-rights>${photos.length ? photoRights(photos[0]) : noData('Sin fotografía')}</span>
           </div>
         </section>
       </section>
@@ -211,19 +324,5 @@ export async function renderSpeciesView(app, route, { signal }) {
     rank: taxon.rank,
   });
 
-  // Si la imagen remota falla, se muestra el estado "sin dato"
-  app.querySelector('[data-photo]')?.addEventListener('error', (event) => {
-    event.target.closest('.photo-card').outerHTML = photoCard(null, name, true);
-  });
-
-  // Pestañas segmentadas: desplazan a cada sección
-  const group = app.querySelector('[data-sections]');
-  group.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-target]');
-    if (!button) return;
-    group.querySelectorAll('[data-target]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-    const section = app.querySelector(`#${button.dataset.target}`);
-    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    section?.focus({ preventScroll: true });
-  });
+  bindGallery(app, photos, name);
 }

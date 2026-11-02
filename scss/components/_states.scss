@@ -1,106 +1,105 @@
 @use "../abstracts/tokens" as *;
 @use "../abstracts/mixins" as *;
 
-// Estados: carga, vacío, sin resultados, error
+// Estados: vacío, sin resultados, error.
+// Ilustración a la izquierda; a la derecha qué pasó y qué hacer después.
 .state {
   @include card;
-  padding: 40px 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+  padding: 32px;
 
-  &__icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--soft-2);
-    color: var(--accent);
+  @include down($bp-sm) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 24px 20px;
+  }
+
+  &__art {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: $radius-md;
+    background: var(--soft-2);
+    color: var(--accent);
+
+    // Las ilustraciones (cladogramas) ocupan su caja sin fondo
+    &--drawing {
+      background: transparent;
+
+      svg { width: 48px; height: 48px; }
+    }
   }
 
-  &--error &__icon { color: var(--danger); }
+  &__body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+  }
 
-  &__title { font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
-  &__text { max-width: 480px; font-size: 15px; line-height: 23px; color: var(--muted); }
-  &__actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+  &__title {
+    font-size: $text-2xl;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
 
-  // Atajos de ejemplo bajo el texto
-  &__chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-}
+  &__text {
+    max-width: 62ch;
+    font-size: $text-sm;
+    line-height: 1.6;
+    color: var(--muted);
+  }
 
-.skeleton {
-  height: 44px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, var(--soft-2) 0%, var(--soft) 50%, var(--soft-2) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    margin-top: 6px;
+  }
 
-  &--eyebrow { height: 18px; width: 30%; }
-  &--title { height: 56px; width: 70%; }
-  &--heading { height: 28px; width: 40%; }
-  &--block { height: 64px; }
-  &--panel { height: 90px; }
-}
+  // Detalle técnico: plegado; útil para reportar el problema
+  &__details {
+    margin-top: 4px;
+    font-size: $text-2xs;
+    color: var(--muted);
+  }
 
-@keyframes shimmer {
-  to { background-position: -200% 0; }
-}
-
-.spinner {
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// Aparición suave de cada vista
-.u-view-enter {
-  animation: view-in $dur-slow $ease-out;
-}
-
-@keyframes view-in {
-  from { opacity: 0; transform: translateY(6px); }
-}
-
-// La región viva siempre existe; el toast se inserta dentro.
-// Así los lectores de pantalla anuncian cada mensaje.
-.toast-region {
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  z-index: 40;
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: calc(100% - 32px);
-}
-
-.toast {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 12px 12px 18px;
-  border-radius: $radius-pill;
-  background: var(--ink);
-  color: var(--on-ink);
-  font-size: 14px;
-  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.45);
-  animation: toast-in $dur-slow $ease-spring;
-
-  &__action {
-    border: 0;
-    background: transparent;
-    color: inherit;
-    font-weight: 600;
-    text-decoration: underline;
+  &__summary {
     cursor: pointer;
-  }
-}
+    font-weight: 600;
+    width: max-content;
 
-@keyframes toast-in {
-  from { opacity: 0; transform: translateY(12px); }
+    &:hover { color: var(--ink); }
+  }
+
+  &__tech {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 12px;
+    margin-top: 10px;
+    font-family: $font-mono;
+    overflow-wrap: anywhere;
+
+    dd { margin: 0; color: var(--ink); }
+  }
+
+  // Error: superficie teñida y borde; el ícono de alerta lo distingue sin depender del color
+  &--error {
+    background: var(--danger-wash);
+    box-shadow: inset 0 0 0 1px var(--danger-line);
+  }
+
+  &--error &__art {
+    background: var(--surface);
+    color: var(--danger);
+  }
 }

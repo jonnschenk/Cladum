@@ -1,6 +1,8 @@
 // Guardar especies + toasts con "Deshacer"
 
-import { toggleFavorite, isFavorite, getFavorites, restoreFavorite } from '../state/favorites.js';
+import {
+  toggleFavorite, isFavorite, getFavorites, restoreFavorite, storageAvailable,
+} from '../state/favorites.js';
 import { icons } from '../ui/components.js';
 import { esc } from '../utils/dom.js';
 
@@ -74,7 +76,10 @@ export function bindSaveButtons(root, taxon) {
       const saved = toggleFavorite(taxon);
       root.querySelectorAll('[data-save]').forEach((b) => paint(b, saved, taxon.name));
 
-      if (saved) {
+      if (saved && !storageAvailable()) {
+        // Nunca se confirma en falso: se avisa que solo vive en esta pestaña
+        showToast(`<i lang="la">${esc(taxon.name)}</i> se guardó solo mientras esta pestaña esté abierta: el navegador no permite almacenamiento`, { duration: 8000 });
+      } else if (saved) {
         showToast(`<i lang="la">${esc(taxon.name)}</i> se guardó en este navegador`);
       } else {
         showToast(`<i lang="la">${esc(taxon.name)}</i> se quitó de guardadas`, {

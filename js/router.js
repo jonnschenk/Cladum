@@ -5,6 +5,7 @@
 //   #/especie/5219426          → ficha de especie
 //   #/especie/5219426/ocurrencias
 //   #/guardadas                → especies guardadas
+//   #/datos                    → acerca de los datos
 
 export function parseHash(hash = window.location.hash) {
   const clean = hash.replace(/^#/, '');
@@ -20,6 +21,7 @@ export function parseHash(hash = window.location.hash) {
     };
   }
   if (parts[0] === 'guardadas') return { name: 'saved', params };
+  if (parts[0] === 'datos') return { name: 'about', params };
   return { name: 'search', params };
 }
 

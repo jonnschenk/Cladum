@@ -9,20 +9,26 @@ import { esc, isAbort } from '../../utils/dom.js';
 import { formatNumber, rankLabel, statusLabel } from '../../utils/format.js';
 import { PAGE_SIZE } from '../../config.js';
 import { renderTaxIndex } from '../taxIndex.js';
+import { renderExploreHome, hydrateExploreHome } from './homeView.js';
+import { renderLoading, renderError, withSlowNotice, loadMore } from '../states.js';
 import {
-  icons, verified, noData, taxonName, apiLink, stateBlock, skeletonPage, saveButton,
+  icons, verified, noData, taxonName, apiLink, stateBlock, saveButton, chip,
 } from '../components.js';
 
+// "ALL" representa "sin filtro" en la URL (un valor vacío se perdería al construirla)
+const ANY = 'ALL';
 const RANKS = [
   ['SPECIES', 'Rango · Especie'],
   ['GENUS', 'Rango · Género'],
   ['FAMILY', 'Rango · Familia'],
-  ['', 'Rango · Cualquiera'],
+  [ANY, 'Rango · Cualquiera'],
 ];
 const STATUSES = [
   ['ACCEPTED', 'Estado · Aceptado'],
-  ['', 'Estado · Incluir sinónimos'],
+  [ANY, 'Estado · Incluir sinónimos'],
 ];
+const apiFilter = (value) => (value === ANY ? undefined : value);
+const filterLabel = (list, value) => list.find(([v]) => v === value)?.[1].split(' · ')[1] ?? value;
 
 const options = (list, current) =>
   list.map(([value, label]) => `<option value="${value}" ${value === current ? 'selected' : ''}>${label}</option>`).join('');
@@ -42,6 +48,7 @@ function searchForm({ q, rank, status }) {
           <button class="btn btn--primary btn--icon" type="submit" aria-label="Buscar">${icons.arrow(18)}</button>
         </div>
         <div class="suggest" hidden data-suggest>
+          <p class="suggest__status" role="status" data-suggest-status hidden></p>
           <div class="suggest__list" id="suggest" role="listbox" aria-label="Sugerencias" data-suggest-list></div>
           <p class="suggest__hint" aria-hidden="true">↑ ↓ para moverte · Enter para abrir · Esc para cerrar</p>
         </div>
@@ -97,7 +104,7 @@ function featuredCard(t, q) {
     <article class="card card--xl result-featured" aria-labelledby="featured-name">
       <div class="card__head">
         ${verified()}
-        <span class="pill pill--accent">${exact ? 'Coincidencia exacta' : 'Mejor coincidencia'}</span>
+        <span class="pill pill--accent">${exact ? 'Coincidencia exacta' : 'Primer resultado'}</span>
       </div>
       <div class="result-featured__top">
         <div class="result-featured__heading">
@@ -129,37 +136,115 @@ function featuredCard(t, q) {
     </article>`;
 }
 
-async function renderNoResults(container, q, signal) {
+const lower = (value) => (value || '').toLowerCase();
+
+/** Puntúa qué tan bien coincide un taxón con lo que se escribió (mayor = más relevante). */
+function relevance(taxon, q) {
+  const query = lower(q.trim());
+  const name = lower(taxon.canonicalName || taxon.scientificName);
+  if (!query) return 10;
+  if (lower(taxon.canonicalName) === query) return 100;
+  if (lower(taxon.genus) === query) return 90;
+  if (name.split(/\s+/)[0] === query) return 80;
+  if (name.startsWith(query)) return 60;
+  if ((taxon.vernacularNames ?? []).some((v) => lower(v.vernacularName) === query)) return 50;
+  return 10;
+}
+
+/**
+ * Si la consulta es exactamente un género, devuelve { key, name, kingdom, family }; si no, null.
+ * /species/match responde NONE cuando hay homónimos (p. ej. «Giardia»: una planta y un
+ * caracol, ambos sinónimos, y el protozoario). En ese caso se buscan los géneros con ese
+ * nombre y se usa el único que no sea sinónimo; si hay varios, no se adivina.
+ */
+async function findGenus(q, signal) {
+  const match = await matchName(q, { signal });
+  if (match?.rank === 'GENUS' && match.matchType === 'EXACT' && match.usageKey) {
+    return { key: match.usageKey, name: match.canonicalName || q, kingdom: match.kingdom, family: match.family };
+  }
+  if (match?.matchType !== 'NONE') return null;
+
+  const genera = await searchSpecies({ q, rank: 'GENUS', limit: 20 }, { signal });
+  const candidates = (genera.results ?? []).filter(
+    (t) => lower(t.canonicalName) === lower(q) && !/SYNONYM|MISAPPLIED/.test(t.taxonomicStatus ?? ''),
+  );
+  if (candidates.length !== 1) return null;
+  const [genus] = candidates;
+  return { key: genus.key, name: genus.canonicalName, kingdom: genus.kingdom, family: genus.family };
+}
+
+/** Aviso del modo género, con salida a la búsqueda por texto. */
+function genusNote(genus, params) {
+  const where = [genus.kingdom && `Reino ${esc(genus.kingdom)}`, genus.family && `Familia ${esc(genus.family)}`]
+    .filter(Boolean)
+    .join(' · ');
+  const textHref = buildHash('/', { q: params.q, rank: params.rank, status: params.status, modo: 'texto' });
+  return `
+    <div class="callout" role="note">
+      <span class="callout__body">
+        <span class="callout__text"><strong>Mostrando especies del género <i lang="la">${esc(genus.name)}</i></strong>${where ? ` · ${where}` : ''}</span>
+        <span class="callout__text"><a href="${textHref}">Buscar como texto</a> para ver cualquier nombre que contenga «${esc(params.q)}».</span>
+      </span>
+    </div>`;
+}
+
+/** Filtros activos que se pueden quitar para ampliar la búsqueda. */
+function removableFilters(params, textMode) {
+  const base = { q: params.q, rank: params.rank, status: params.status, higher: params.higher, label: params.label, modo: textMode ? 'texto' : '' };
+  const list = [];
+  if (params.higher) list.push([`Dentro de: ${params.label || params.higher}`, { ...base, higher: '', label: '' }]);
+  if (params.rank !== ANY) list.push([`Rango: ${filterLabel(RANKS, params.rank)}`, { ...base, rank: ANY }]);
+  if (params.status !== ANY) list.push([`Estado: ${filterLabel(STATUSES, params.status)}`, { ...base, status: ANY }]);
+  return list;
+}
+
+async function renderNoResults(container, params, textMode, signal) {
+  const { q } = params;
   let suggestion = '';
   if (q) {
     try {
       const match = await matchName(q, { signal });
       if (match?.usageKey && match.matchType !== 'NONE') {
-        suggestion = `¿Quisiste decir <a href="${buildHash(`/especie/${match.usageKey}`)}">${taxonName(match.canonicalName || match.scientificName, match.rank)}</a>?`;
+        suggestion = `
+          <p class="did-you-mean">¿Quisiste decir <a href="${buildHash(`/especie/${match.usageKey}`)}">${taxonName(match.canonicalName || match.scientificName, match.rank)}</a>?
+            <span class="did-you-mean__source">${match.matchType === 'FUZZY' ? 'coincidencia aproximada' : 'coincidencia'} · ${apiLink(apiUrl('/species/match', { name: q }), 'species/match')}</span>
+          </p>`;
       }
     } catch (error) {
       if (isAbort(error)) return;
     }
   }
+
+  const filters = removableFilters(params, textMode);
+  const chips = filters.length
+    ? `<div class="chip-row">
+        <span class="chip-row__label">${suggestion ? 'O amplía la búsqueda quitando un filtro:' : 'Amplía la búsqueda quitando un filtro:'}</span>
+        ${filters.map(([label, next]) => chip(buildHash('/', next), `Quitar «${esc(label)}»`)).join('')}
+      </div>`
+    : '';
+
   container.innerHTML = stateBlock({
     type: 'no-results',
     title: q ? `Ningún taxón coincide con «${esc(q)}»` : 'Sin resultados',
-    text: suggestion || 'Revisa el nombre o cambia el rango y el estado taxonómico.',
+    text: (suggestion || filters.length) ? '' : 'Revisa la ortografía o prueba con el nombre científico.',
+    body: suggestion + chips,
     level: 1,
   });
 }
 
-function renderResults(container, data, params) {
+/**
+ * @param query Lo que realmente se envió a GBIF: { apiQ, higherTaxonKey, genus }.
+ *              params.q es lo que escribió la persona y solo se usa para ordenar.
+ */
+function renderResults(container, data, params, query) {
   const { q, label } = params;
-  const results = data.results;
-  const featured =
-    results.find((t) => (t.canonicalName || '').toLowerCase() === q.toLowerCase()) ?? results[0];
-  const others = results.filter((t) => t !== featured);
+  const results = [...data.results].sort((a, b) => relevance(b, q) - relevance(a, q));
+  const [featured, ...others] = results;
   const v = pickVernacular(featured.vernacularNames);
   let offset = data.offset + data.limit;
 
   container.innerHTML = `
-    <div class="layout u-view-enter">
+    <div class="layout u-fade-in">
       <div class="layout__aside">${renderTaxIndex(featured)}</div>
       <section class="layout__content" aria-labelledby="results-title">
         <header class="page-head">
@@ -171,13 +256,17 @@ function renderResults(container, data, params) {
           <span class="pill pill--raised"><span class="u-mono">${formatNumber(data.count)}</span>&nbsp;${data.count === 1 ? 'resultado' : 'resultados'}</span>
         </header>
 
+        ${query.genus ? genusNote(query.genus, params) : ''}
+
         ${featuredCard(featured, q)}
 
         ${others.length ? `
           <section class="results-group" aria-labelledby="others-title">
             <h2 class="eyebrow" id="others-title">Otros resultados</h2>
             <ul class="result-list" data-result-list>${others.map(resultRow).join('')}</ul>
-            ${data.endOfRecords ? '' : '<div class="load-more"><button class="btn btn--secondary" type="button" data-more>Cargar más</button></div>'}
+            <div class="load-more" data-more-wrap>${data.endOfRecords
+              ? `<p class="load-more__end">Mostrando ${data.count === 1 ? 'el único resultado' : `los ${formatNumber(data.count)} resultados`}</p>`
+              : '<button class="btn btn--secondary" type="button" data-more>Cargar más</button>'}</div>
           </section>` : ''}
 
         <div class="grid-auto" style="--min:340px">
@@ -185,7 +274,7 @@ function renderResults(container, data, params) {
             <h2 class="eyebrow" id="trace-title">Trazabilidad de la consulta</h2>
             <p class="card__text">Los resultados vienen directo de GBIF. No se añaden taxones ni datos no comprobados.</p>
             <div class="card__links">
-              ${apiLink(searchSpeciesUrl({ q, rank: params.rank, status: params.status, highertaxonKey: params.higher, limit: PAGE_SIZE }), 'species/search')}
+              ${apiLink(searchSpeciesUrl({ q: query.apiQ, rank: apiFilter(params.rank), status: apiFilter(params.status), highertaxonKey: query.higherTaxonKey, limit: PAGE_SIZE }), 'species/search')}
               ${apiLink(apiUrl(`/species/${featured.key}`), `species/${featured.key}`)}
             </div>
           </section>
@@ -203,22 +292,19 @@ function renderResults(container, data, params) {
   announce(`${formatNumber(data.count)} ${data.count === 1 ? 'resultado' : 'resultados'}${q ? ` para ${q}` : ''}`);
 
   const more = container.querySelector('[data-more]');
+  let shown = data.results.length;
   more?.addEventListener('click', async () => {
-    more.disabled = true;
-    more.textContent = 'Cargando…';
+    loadMore.loading(more);
     try {
-      const page = await searchSpecies({ q, rank: params.rank, status: params.status, higherTaxonKey: params.higher, offset });
+      const page = await searchSpecies({ q: query.apiQ, rank: apiFilter(params.rank), status: apiFilter(params.status), higherTaxonKey: query.higherTaxonKey, offset });
       container.querySelector('[data-result-list]').insertAdjacentHTML('beforeend', page.results.map(resultRow).join(''));
       offset = page.offset + page.limit;
+      shown += page.results.length;
       announce(`${page.results.length} resultados más cargados`);
-      if (page.endOfRecords) more.parentElement.remove();
-      else {
-        more.disabled = false;
-        more.textContent = 'Cargar más';
-      }
+      if (page.endOfRecords) loadMore.end(more.parentElement, `Mostrando los ${formatNumber(shown)} resultados`);
+      else loadMore.idle(more);
     } catch {
-      more.disabled = false;
-      more.textContent = 'No se pudo cargar. Reintentar';
+      loadMore.error(more);
     }
   });
 }
@@ -226,53 +312,60 @@ function renderResults(container, data, params) {
 export async function renderSearchView(app, route, { signal }) {
   const params = {
     q: route.params.get('q') ?? '',
-    rank: route.params.get('rank') ?? 'SPECIES',
-    status: route.params.get('status') ?? 'ACCEPTED',
+    rank: route.params.get('rank') || 'SPECIES',
+    status: route.params.get('status') || 'ACCEPTED',
     higher: route.params.get('higher') ?? '',
     label: route.params.get('label') ?? '',
   };
+  const textMode = route.params.get('modo') === 'texto';
+
+  // Sin consulta: portada con el buscador integrado
+  if (!params.q && !params.higher) {
+    app.innerHTML = renderExploreHome(searchForm(params));
+    bindSearchForm(app.querySelector('[data-search-form]'));
+    hydrateExploreHome(app.querySelector('[data-explore-home]'), { signal });
+    return;
+  }
 
   app.innerHTML = `${searchForm(params)}<div data-results></div>`;
   bindSearchForm(app.querySelector('[data-search-form]'));
   const container = app.querySelector('[data-results]');
 
-  if (!params.q && !params.higher) {
-    const examples = ['Panthera onca', 'Ambystoma mexicanum', 'Quercus rugosa', 'Danaus plexippus'];
-    container.innerHTML = stateBlock({
-      type: 'empty',
-      title: 'Empieza por un nombre',
-      text: 'Escribe un nombre científico o común. También puedes recorrer la clasificación desde el índice de cualquier especie.',
-      actions: `<ul class="state__chips" aria-label="Ejemplos de búsqueda">${examples
-        .map((n) => `<li class="state__chip"><a class="pill pill--raised" href="${buildHash('/', { q: n, rank: 'SPECIES', status: 'ACCEPTED' })}"><i lang="la">${esc(n)}</i></a></li>`)
-        .join('')}</ul>`,
-      level: 1,
-    });
-    return;
-  }
+  renderLoading(container, 'search');
 
-  container.innerHTML = skeletonPage();
+  // Lo que se envía a GBIF. En modo género cambia respecto a lo que se escribió.
+  let query = { apiQ: params.q, higherTaxonKey: params.higher, genus: null };
 
-  try {
-    const data = await searchSpecies(
-      { q: params.q, rank: params.rank, status: params.status, higherTaxonKey: params.higher },
+  const load = async () => {
+    // Una sola palabra buscando especies: puede ser un género («Giardia», «Quercus»)
+    if (params.q && !params.higher && params.rank === 'SPECIES' && !textMode && /^\S+$/.test(params.q.trim())) {
+      try {
+        const genus = await findGenus(params.q.trim(), signal);
+        if (genus) query = { apiQ: '', higherTaxonKey: genus.key, genus };
+      } catch (error) {
+        if (isAbort(error)) throw error;
+        // Si la detección falla, se sigue con la búsqueda normal por texto
+      }
+    }
+    return searchSpecies(
+      { q: query.apiQ, rank: apiFilter(params.rank), status: apiFilter(params.status), higherTaxonKey: query.higherTaxonKey },
       { signal },
     );
+  };
+
+  try {
+    const data = await withSlowNotice(load(), container);
     if (!data.results?.length) {
-      await renderNoResults(container, params.q, signal);
+      await renderNoResults(container, params, textMode, signal);
       return;
     }
-    renderResults(container, data, params);
+    renderResults(container, data, params, query);
   } catch (error) {
     if (isAbort(error)) return;
-    container.innerHTML = stateBlock({
-      type: 'error',
-      title: 'No se pudo consultar GBIF',
-      text: 'Tu búsqueda y tus filtros se conservaron. Revisa tu conexión e inténtalo de nuevo.',
-      actions: '<button class="btn btn--primary" type="button" data-retry>Reintentar</button>',
-      level: 1,
+    renderError(container, error, {
+      onRetry: () => navigate('/', {
+        q: params.q, rank: params.rank, status: params.status, higher: params.higher, label: params.label, modo: textMode ? 'texto' : '',
+      }),
     });
-    container.querySelector('[data-retry]').addEventListener('click', () =>
-      navigate('/', { q: params.q, rank: params.rank, status: params.status, higher: params.higher, label: params.label }),
-    );
   }
 }

@@ -34,8 +34,7 @@
       <nav class="main-nav" aria-label="Principal">
         <ul class="main-nav__list">
           <li class="main-nav__item"><a class="main-nav__link" href="#/" data-nav="search">Explorar</a></li>
-          <li class="main-nav__item"><a class="main-nav__link" role="link" data-nav="species" aria-disabled="true">Taxonomía</a></li>
-          <li class="main-nav__item"><a class="main-nav__link" role="link" data-nav="occurrences" aria-disabled="true">Ocurrencias</a></li>
+          <li class="main-nav__item"><a class="main-nav__link" href="#/datos" data-nav="about">Acerca de los datos</a></li>
           <li class="main-nav__item"><a class="main-nav__link" href="#/guardadas" data-nav="saved">Guardadas <span class="main-nav__count" data-fav-count>0</span><span class="u-visually-hidden"> especies</span></a></li>
         </ul>
       </nav>
@@ -49,9 +48,17 @@
         </button>
       </div>
     </header>
+    <!-- Se llena solo cuando el navegador pierde la conexión -->
+    <div class="net-banner" data-net-banner role="status" hidden></div>
   </div>
 
-  <main id="app" class="page" tabindex="-1"></main>
+  <main id="app" class="page" tabindex="-1">
+    <!-- Arranque: visible antes de que cargue el JS; la primera vista lo reemplaza -->
+    <div class="boot" role="status">
+      <svg class="loader loader--lg" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path class="loader__branch" d="M2 12H7" pathLength="1" style="--step:0"/><path class="loader__branch" d="M7 6V18" pathLength="1" style="--step:1"/><path class="loader__branch" d="M7 6H13M7 18H13" pathLength="1" style="--step:2"/><path class="loader__branch" d="M13 3.5V8.5M13 15.5V20.5" pathLength="1" style="--step:3"/><path class="loader__branch" d="M13 3.5H21M13 8.5H21M13 15.5H21M13 20.5H21" pathLength="1" style="--step:4"/><circle class="loader__node" cx="21" cy="3.5" r="1.7" style="--step:5"/><circle class="loader__node" cx="21" cy="8.5" r="1.7" style="--step:5.5"/><circle class="loader__node" cx="21" cy="15.5" r="1.7" style="--step:6"/><circle class="loader__node" cx="21" cy="20.5" r="1.7" style="--step:6.5"/></svg>
+      <p class="boot__text">Cargando Cladum…</p>
+    </div>
+  </main>
 
   <footer class="site-footer">
     <div class="site-footer__inner">
@@ -71,6 +78,7 @@
             Información no disponible o no cotejada.
           </div>
         </div>
+        <a class="site-footer__more" href="#/datos">Cómo leer y citar estos datos</a>
       </div>
       <div class="site-footer__meta">
         <span>Cladum · Atlas de precisión</span>

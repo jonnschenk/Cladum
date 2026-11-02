@@ -38,7 +38,7 @@
     gap: 2px;
   }
 
-  &__label { font-size: 12px; color: var(--muted); }
+  &__label { font-size: $text-2xs; color: var(--muted); }
 
   &__input {
     width: 100%;
@@ -46,9 +46,12 @@
     border: 0;
     outline: 0;
     background: transparent;
-    font-size: 18px;
+    font-size: $text-md;
     font-weight: 500;
     color: var(--ink);
+
+    // iOS hace zoom al enfocar campos con texto menor a 16px
+    @include down($bp-sm) { font-size: 16px; }
 
     &::placeholder { color: var(--muted); font-weight: 400; }
     &::-webkit-search-cancel-button { display: none; }
@@ -98,9 +101,9 @@
     &:hover { background: var(--soft-2); }
   }
 
-  &__name { font-size: 17px; }
-  &__meta { font-size: 13px; color: var(--muted); }
-  &__hint { padding: 6px 14px 4px; font-size: 12px; color: var(--muted); }
+  &__name { font-size: $text-md; }
+  &__meta { font-size: $text-2xs; color: var(--muted); }
+  &__hint { padding: 6px 14px 4px; font-size: $text-2xs; color: var(--muted); }
 }
 
 @keyframes suggest-in {
@@ -120,11 +123,13 @@
     border-radius: $radius-pill;
     background: var(--surface);
     box-shadow: var(--card-shadow);
-    font-size: 15px;
+    font-size: $text-sm;
     font-weight: 500;
     color: var(--ink);
     cursor: pointer;
     transition: transform $dur-slow $ease-spring;
+
+    @include down($bp-sm) { font-size: 16px; }
 
     &:hover { transform: translateY(-1px); }
   }
@@ -148,7 +153,7 @@
   border-radius: $radius-pill;
   background: var(--surface);
   box-shadow: var(--card-shadow);
-  font-size: 15px;
+  font-size: $text-sm;
   font-weight: 500;
   cursor: pointer;
 

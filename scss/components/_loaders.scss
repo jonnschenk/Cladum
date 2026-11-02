@@ -1,0 +1,189 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+// ─────────────────────────────────────────────
+// Carga: brillo de skeleton, huesos, loader de marca y spinner de botón
+// ─────────────────────────────────────────────
+
+// Un único brillo para toda la pantalla: con background-attachment: fixed
+// todos los huesos comparten el mismo barrido, como una sola superficie.
+@mixin shimmer {
+  background-color: var(--soft);
+  background-image: linear-gradient(90deg, transparent 0%, var(--soft-2) 50%, transparent 100%);
+  background-size: 60vw 100%;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  animation: shimmer 1.6s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    background-image: none;
+    animation: none;
+  }
+}
+
+@keyframes shimmer {
+  from { background-position: -60vw 0; }
+  to { background-position: 100vw 0; }
+}
+
+// Contenedor del skeleton de una vista. Aparece tras un breve retraso:
+// si los datos llegan antes (caché), nunca se ve un destello gris.
+.skeleton-view {
+  animation: skeleton-in $dur-enter $ease-out $skeleton-delay backwards;
+}
+
+@keyframes skeleton-in {
+  from { opacity: 0; }
+}
+
+// Hueso de texto: vive dentro del elemento real (título, fila, etiqueta…),
+// así hereda su tamaño de letra y su interlineado y ocupa lo mismo que el texto.
+.skeleton-view .bone {
+  display: inline-block;
+  vertical-align: middle;
+  width: var(--w, 100%);
+  max-width: 100%;
+  height: 0.78em;
+  border-radius: 0.3em;
+  @include shimmer;
+
+  // Píldoras, botones y bloques con medidas propias
+  &--pill,
+  &--btn {
+    width: var(--w, 120px);
+    height: var(--h, 30px);
+    border-radius: $radius-pill;
+  }
+
+  &--btn { height: var(--h, 48px); }
+
+  // Ocupa la caja del elemento que lo lleva (foto, miniatura)
+  &--fill {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 16px;
+  }
+}
+
+.skeleton-view .photo-card__thumb.bone { width: 64px; height: 64px; border-radius: $radius-sm; }
+
+// Texto de carga: el loader y el mensaje que cambia si GBIF tarda
+.loading-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// Skeletons sueltos de la portada (cifras, nombres, tarjetas)
+.skeleton {
+  display: block;
+  height: 44px;
+  border-radius: 8px;
+  @include shimmer;
+
+  &--line { height: 14px; width: 60%; }
+  &--stat { height: 32px; width: 70%; }
+}
+
+// ── Loader de marca ─────────────────────────
+// Ciclo: el cladograma se dibuja en $dur-loader, se sostiene y se borra.
+// Cada trazo y cada nodo tiene su --step: el retraso es step × 90 ms.
+.loader {
+  flex: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  overflow: visible;
+
+  &--sm { width: 16px; height: 16px; stroke-width: 2; }
+  &--lg { width: 72px; height: 72px; stroke-width: 1.1; }
+
+  &__branch {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: loader-draw $loader-cycle $ease-in-out infinite backwards;
+    animation-delay: calc(var(--step) * 90ms);
+  }
+
+  &__node {
+    fill: currentColor;
+    stroke: none;
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(0);
+    animation: loader-node $loader-cycle $ease-spring infinite backwards;
+    animation-delay: calc(var(--step) * 90ms);
+  }
+
+  // Sin movimiento: el cladograma completo y un leve pulso de opacidad
+  @media (prefers-reduced-motion: reduce) {
+    animation: loader-pulse $loader-cycle ease-in-out infinite;
+
+    &__branch,
+    &__node {
+      animation: none;
+      stroke-dashoffset: 0;
+      transform: none;
+    }
+  }
+}
+
+// 0–9 % ≈ 150 ms por trazo; se sostiene y se borra al final del ciclo
+@keyframes loader-draw {
+  0% { stroke-dashoffset: 1; opacity: 1; }
+  9%, 78% { stroke-dashoffset: 0; opacity: 1; }
+  92%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes loader-node {
+  0% { transform: scale(0); opacity: 1; }
+  8%, 78% { transform: scale(1); opacity: 1; }
+  92%, 100% { transform: scale(1); opacity: 0; }
+}
+
+@keyframes loader-pulse {
+  50% { opacity: 0.45; }
+}
+
+// Arranque de la app: el loader va escrito en index.html para verse antes del JS.
+// Solo aparece si el arranque tarda; en cargas rápidas no hay destello.
+.boot {
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--accent);
+  animation: skeleton-in $dur-enter $ease-out 300ms backwards;
+
+  &__text {
+    font-size: $text-xs;
+    font-weight: 600;
+    color: var(--muted);
+  }
+}
+
+// Spinner: solo dentro de botones
+.spinner {
+  display: inline-flex;
+  animation: spin 0.9s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-label .loader { color: var(--accent); }
+
+// El contenido que reemplaza a un skeleton solo aparece con opacidad:
+// los huesos ya ocupaban su sitio, así que no hace falta desplazarlo.
+.u-fade-in {
+  animation: skeleton-in $dur-enter $ease-out;
+}
+
+// Los marcos de foto del skeleton no esperan a ninguna imagen
+.skeleton-view .photo-card__img { opacity: 1; }
