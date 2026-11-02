@@ -24,7 +24,7 @@
 
   &__head {
     padding: 10px 20px 8px;
-    font-size: 12px;
+    font-size: $text-2xs;
     font-weight: 600;
     color: var(--muted);
   }
@@ -56,14 +56,14 @@
   }
 
   &__id,
-  &__uncertainty { font: 400 13px $font-mono; }
+  &__uncertainty { font: 400 $text-2xs $font-mono; }
   &__date,
-  &__observer { font-size: 14px; }
+  &__observer { font-size: $text-xs; }
 
   &__place { display: flex; flex-direction: column; gap: 2px; }
   &__country { font-weight: 600; }
-  &__sub { font-size: 13px; color: var(--muted); }
-  &__basis { font-size: 12px; color: var(--muted); }
+  &__sub { font-size: $text-2xs; color: var(--muted); }
+  &__basis { font-size: $text-2xs; color: var(--muted); }
 
   &__quality {
     display: flex;
@@ -75,7 +75,7 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: $text-2xs;
     font-weight: 600;
     color: var(--warn);
 
@@ -99,7 +99,7 @@
   }
 
   &__id {
-    font: 500 28px/1.2 $font-mono;
+    font: 500 #{$text-5xl}/1.2 $font-mono;
     letter-spacing: -0.02em;
     overflow-wrap: anywhere;
   }
@@ -119,7 +119,7 @@
   }
 
   &__issues { display: flex; flex-wrap: wrap; gap: 8px; }
-  &__note { font-size: 13px; line-height: 19px; color: var(--muted); }
+  &__note { font-size: $text-2xs; line-height: 1.55; color: var(--muted); }
 
   &__source {
     display: inline-flex;
@@ -128,7 +128,7 @@
   }
 
   &__sub {
-    font-size: 16px;
+    font-size: $text-base;
     font-weight: 700;
   }
 }

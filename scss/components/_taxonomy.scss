@@ -16,7 +16,7 @@
     padding: 0 10px;
   }
 
-  &__title { font-size: 15px; font-weight: 700; }
+  &__title { font-size: $text-sm; font-weight: 700; }
 
   &__list {
     display: flex;
@@ -46,12 +46,12 @@
     }
   }
 
-  &__rank { font-size: 12px; color: var(--muted); }
-  &__key { font: 400 11px $font-mono; color: var(--muted); }
+  &__rank { font-size: $text-2xs; color: var(--muted); }
+  &__key { font: 400 $text-3xs $font-mono; color: var(--muted); }
 
   &__name {
     grid-column: 1 / -1;
-    font-size: 17px;
+    font-size: $text-md;
     font-weight: 500;
     overflow-wrap: anywhere;
 
@@ -60,8 +60,8 @@
 
   &__note {
     padding: 4px 10px 0;
-    font-size: 13px;
-    line-height: 19px;
+    font-size: $text-2xs;
+    line-height: 1.55;
     color: var(--muted);
   }
 
@@ -87,7 +87,7 @@
     border: 0;
     border-radius: $radius-pill;
     background: transparent;
-    font-size: 14px;
+    font-size: $text-xs;
     font-weight: 500;
     color: var(--ink);
     cursor: pointer;

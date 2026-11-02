@@ -11,7 +11,17 @@ try {
 
 export const formatNumber = (n) => (typeof n === 'number' ? numberFormat.format(n) : '—');
 
-export const formatMeters = (m) => (typeof m === 'number' ? `${numberFormat.format(Math.round(m))} m` : null);
+const compactFormat = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
+
+/** 3 887 469 368 → "3,9 mil millones"; 2 614 593 → "2,6 millones". */
+export function formatCompact(n) {
+  if (typeof n !== 'number') return '—';
+  if (n >= 1e9) return `${compactFormat.format(n / 1e9)} mil millones`;
+  if (n >= 1e6) return `${compactFormat.format(n / 1e6)} millones`;
+  return numberFormat.format(n);
+}
+
+export const formatMeters =(m) => (typeof m === 'number' ? `${numberFormat.format(Math.round(m))} m` : null);
 
 /** "2026-01-04T10:20" o "2026-01-04/2026-01-05" → "04 ene 2026" */
 export function formatDate(value) {

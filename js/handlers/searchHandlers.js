@@ -5,6 +5,7 @@ import { navigate } from '../router.js';
 import { esc, debounce, isAbort } from '../utils/dom.js';
 import { rankLabel } from '../utils/format.js';
 import { taxonName } from '../ui/components.js';
+import { brandLoader } from '../ui/states.js';
 import { SUGGEST_DELAY } from '../config.js';
 import { announce } from './feedback.js';
 
@@ -12,13 +13,20 @@ export function bindSearchForm(form) {
   const input = form.querySelector('[data-search-input]');
   const panel = form.querySelector('[data-suggest]');
   const listbox = form.querySelector('[data-suggest-list]');
+  const status = form.querySelector('[data-suggest-status]');
+  const hint = form.querySelector('.suggest__hint');
   if (!input || !panel || !listbox) return;
+
+  // La línea de estado solo se muestra si la consulta tarda: así no parpadea
+  const LOADING_DELAY = 200;
+  let loadingTimer;
 
   let options = [];
   let active = -1;
   let controller = null;
 
   const close = () => {
+    clearTimeout(loadingTimer);
     panel.hidden = true;
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
@@ -37,12 +45,27 @@ export function bindSearchForm(form) {
     }
   };
 
-  const render = (items) => {
+  /** Panel abierto solo con un mensaje (cargando o sin sugerencias). */
+  const showStatus = (html) => {
+    if (!status) return;
+    options = [];
+    listbox.innerHTML = '';
+    status.innerHTML = html;
+    status.hidden = false;
+    if (hint) hint.hidden = true;
+    panel.hidden = false;
+    input.setAttribute('aria-expanded', 'false');
+  };
+
+  const render = (items, value) => {
+    clearTimeout(loadingTimer);
     options = items;
     if (!items.length) {
-      close();
+      showStatus(`Sin sugerencias para «${esc(value.trim())}». Pulsa Enter para buscar en todo el texto.`);
       return;
     }
+    if (status) status.hidden = true;
+    if (hint) hint.hidden = false;
     listbox.innerHTML = items
       .map(
         (item, i) => `
@@ -65,11 +88,13 @@ export function bindSearchForm(form) {
       return;
     }
     controller = new AbortController();
+    clearTimeout(loadingTimer);
+    loadingTimer = setTimeout(() => showStatus(`${brandLoader('sm')}Buscando sugerencias…`), LOADING_DELAY);
     try {
       const results = await suggestSpecies(value.trim(), { signal: controller.signal });
-      if (input.value === value) render(results ?? []);
+      if (input.value === value) render(results ?? [], value);
     } catch (error) {
-      if (!isAbort(error)) close(); // si falla, el buscador sigue funcionando con Enter
+      if (!isAbort(error)) close(); // error silencioso: el buscador sigue funcionando con Enter
     }
   }, SUGGEST_DELAY);
 

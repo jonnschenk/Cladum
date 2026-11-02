@@ -1,0 +1,43 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+// ─────────────────────────────────────────────
+// Movimiento compartido. Todo respeta prefers-reduced-motion:
+// sin desplazamientos ni escalas, solo opacidad.
+// ─────────────────────────────────────────────
+
+// Aparición de cada vista
+.u-view-enter {
+  animation: view-in $dur-slow $ease-out;
+}
+
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+}
+
+// Un bloque que cambia en su sitio (detalle de registro, resultados filtrados)
+.u-swap {
+  animation: swap-in $dur-enter $ease-out;
+}
+
+@keyframes swap-in {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
+// Contenido que se está actualizando: se atenúa y no responde hasta que llega lo nuevo
+.is-updating {
+  opacity: 0.45;
+  transition: opacity $dur-micro $ease-out;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .u-view-enter,
+  .u-swap {
+    animation-name: fade-in;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}

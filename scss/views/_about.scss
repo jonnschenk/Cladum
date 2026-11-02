@@ -1,0 +1,98 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+// Acerca de los datos
+.about {
+  &__aside {
+    position: sticky;
+    top: 112px;
+
+    // En móvil el contenido se lee de corrido: el índice sobra
+    @include down($bp-md) { display: none; }
+  }
+
+  &__toc {
+    @include card;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 12px 14px;
+
+    .eyebrow { padding: 0 10px; }
+  }
+
+  &__toc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__toc-link {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-size: $text-sm;
+    color: var(--ink);
+    text-decoration: none;
+    transition: background-color $dur-base;
+
+    &:hover { background: var(--soft-2); color: var(--ink); }
+  }
+
+  // El encabezado fijo no debe tapar el título al desplazarse
+  &__section { scroll-margin-top: 112px; }
+
+  &__points {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-left: 18px;
+    list-style: disc;
+    font-size: $text-sm;
+    line-height: 1.62;
+
+    li::marker { color: var(--muted); }
+  }
+
+  &__queries {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__query {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--soft);
+
+    &:first-child { border-top: 0; }
+  }
+
+  &__query-use { font-size: $text-sm; }
+
+  &__cite {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin: 0;
+    padding: 16px 18px;
+    border-radius: $radius-sm;
+    background: var(--soft-2);
+  }
+
+  &__cite-text {
+    flex: 1 1 320px;
+    margin: 0;
+    font: 400 $text-xs $font-mono;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+}

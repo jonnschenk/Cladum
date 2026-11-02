@@ -24,6 +24,9 @@ export const icons = {
     `<svg width="${s ?? 16}" height="${s ?? 16}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>`,
   image: (s) => svg('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="M21 17l-5-5-9 8"/>', s, 1.8),
   moon: (s) => svg('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>', s, 1.8),
+  offline: (s) => svg('<path d="M2 8.8a15 15 0 0 1 4.2-2.6M9.8 5.1A15 15 0 0 1 22 8.8M5 12.6a10 10 0 0 1 3.7-2.2M14.6 10.3A10 10 0 0 1 19 12.6M8.5 16.4a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/>', s, 1.8),
+  clock: (s) => svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', s, 1.8),
+  spinner: (s) => svg('<path d="M21 12a9 9 0 1 1-6.2-8.6"/>', s, 2.2),
   sun: (s) => svg('<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>', s, 1.8),
 };
 
@@ -69,46 +72,53 @@ export function externalLink(href, label) {
 
 // ── Estados ─────────────────────────────────
 
+// Ilustraciones de estado: variaciones del cladograma de la marca.
+// Completo = hay algo por explorar; con una rama punteada = no se encontró.
+const ART = {
+  cladogram: `
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 24h10M14 12v24M14 12h12M14 36h12M26 7v10M26 31v10M26 7h16M26 17h16M26 31h16M26 41h16"/>
+      <circle cx="42" cy="7" r="2.6" fill="currentColor" stroke="none"/><circle cx="42" cy="17" r="2.6" fill="currentColor" stroke="none"/>
+      <circle cx="42" cy="31" r="2.6" fill="currentColor" stroke="none"/><circle cx="42" cy="41" r="2.6" fill="currentColor" stroke="none"/>
+    </svg>`,
+  missing: `
+    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <path d="M4 24h10M14 12v24M14 12h12M26 7v10M26 7h16M26 17h16"/>
+      <path d="M14 36h12M26 31v10M26 31h16M26 41h16" stroke-dasharray="2 4"/>
+      <circle cx="42" cy="7" r="2.6" fill="currentColor" stroke="none"/><circle cx="42" cy="17" r="2.6" fill="currentColor" stroke="none"/>
+      <circle cx="42" cy="31" r="3" stroke-dasharray="2 2.6"/><circle cx="42" cy="41" r="3" stroke-dasharray="2 2.6"/>
+    </svg>`,
+};
+
 /**
- * Bloque de estado (vacío, sin resultados, error…).
+ * Bloque de estado (vacío, sin resultados, error…): ilustración a la izquierda,
+ * qué pasó y qué hacer después a la derecha.
  * level=1 cuando el estado ocupa toda la vista: así la página siempre tiene
  * un h1 y el router puede moverle el foco.
+ * @param {{type?:string, title:string, text?:string, body?:string, actions?:string, details?:string, art?:string, level?:number}} opts
+ *   body: contenido extra bajo el texto (sugerencias, chips…)
+ *   details: HTML que va dentro de un <details> «Detalle técnico»
+ *   art: 'cladogram' | 'missing' | nombre de un ícono
  */
-export function stateBlock({ type = 'empty', title, text = '', actions = '', level = 2 }) {
-  const icon = {
-    loading: `<span class="spinner">${icons.search(24)}</span>`,
-    empty: icons.search(24),
-    'no-results': icons.noResults(24),
-    error: icons.alert(24),
-  }[type];
+export function stateBlock({ type = 'empty', title, text = '', body = '', actions = '', details = '', art, level = 2 }) {
+  const name = art ?? { empty: 'cladogram', 'no-results': 'missing', error: 'warn' }[type] ?? 'cladogram';
+  const figure = ART[name] ?? icons[name]?.(24) ?? '';
 
   return `
     <section class="state state--${type}" ${type === 'error' ? 'role="alert"' : ''}>
-      <span class="state__icon">${icon}</span>
-      <h${level} class="state__title" ${level === 1 ? 'tabindex="-1"' : ''}>${title}</h${level}>
-      ${text ? `<p class="state__text">${text}</p>` : ''}
-      ${actions ? `<div class="state__actions">${actions}</div>` : ''}
+      <span class="state__art ${ART[name] ? 'state__art--drawing' : ''}" aria-hidden="true">${figure}</span>
+      <div class="state__body">
+        <h${level} class="state__title" ${level === 1 ? 'tabindex="-1"' : ''}>${title}</h${level}>
+        ${text ? `<p class="state__text">${text}</p>` : ''}
+        ${body}
+        ${actions ? `<div class="state__actions">${actions}</div>` : ''}
+        ${details ? `<details class="state__details"><summary class="state__summary">Detalle técnico</summary>${details}</details>` : ''}
+      </div>
     </section>`;
 }
 
-export function skeletonPage() {
-  return `
-    <div class="layout" role="status" aria-busy="true">
-      <p class="u-visually-hidden">Cargando datos de GBIF…</p>
-      <div class="layout__aside" aria-hidden="true"><div class="card card--tight">
-        ${Array.from({ length: 6 }, () => '<div class="skeleton"></div>').join('')}
-      </div></div>
-      <div class="layout__content" aria-hidden="true">
-        <div class="skeleton skeleton--eyebrow"></div>
-        <div class="skeleton skeleton--title"></div>
-        <div class="card card--xl">
-          <div class="skeleton skeleton--heading"></div>
-          <div class="skeleton skeleton--block"></div>
-          <div class="skeleton skeleton--panel"></div>
-        </div>
-      </div>
-    </div>`;
-}
+/** Enlace con forma de chip: ejemplos de búsqueda, quitar un filtro… */
+export const chip = (href, label) => `<a class="chip" href="${esc(href)}">${label}</a>`;
 
 export function saveButton(saved, label) {
   return `

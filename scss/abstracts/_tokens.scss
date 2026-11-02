@@ -5,6 +5,9 @@
 // Los colores viven en custom properties para el modo oscuro.
 // ─────────────────────────────────────────────
 
+// Tamaños de texto: ver _typography.scss
+@forward "typography";
+
 // Breakpoints
 $bp-sm: 600px;
 $bp-md: 900px;
@@ -22,6 +25,19 @@ $ease-out: cubic-bezier(0.2, 0, 0, 1);
 $dur-fast: 150ms;
 $dur-base: 220ms;
 $dur-slow: 300ms;
+
+// Movimiento: cada curva tiene un papel
+//   $ease-out    · lo que entra o se desplaza (calmado)
+//   $ease-spring · solo confirmaciones (guardar, toast)
+//   $ease-in-out · el loader de marca
+$ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+$dur-micro: 150ms;        // aparecer/desaparecer pequeño
+$dur-enter: 220ms;        // contenido que entra
+$dur-loader: 600ms;       // dibujo completo del cladograma
+$loader-cycle: 1600ms;    // dibujo + pausa + borrado
+$stagger-step: 40ms;      // separación entre elementos de una lista
+$stagger-max: 400ms;      // tope del escalonado completo
+$skeleton-delay: 150ms;   // las cargas rápidas no llegan a mostrar el skeleton
 
 // Tipografía
 $font-sans: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
@@ -52,6 +68,8 @@ $sidebar-w: 280px;
   --warn: #a4471f;
   --warn-wash: #f6ece6;
   --danger: #b42318;
+  --danger-wash: #fbf0ef;
+  --danger-line: rgba(180, 35, 24, 0.28);
 
   --on-ink: #ffffff;
   --on-ink-muted: #c9d1d6;
@@ -89,6 +107,8 @@ $sidebar-w: 280px;
   --warn: #f0a07a;
   --warn-wash: #2a1d17;
   --danger: #f97066;
+  --danger-wash: #2a1716;
+  --danger-line: rgba(249, 112, 102, 0.32);
 
   --on-ink: #0b1220;
   --on-ink-muted: #3a4652;

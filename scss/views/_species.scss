@@ -11,15 +11,15 @@
   &__text { display: flex; flex-direction: column; gap: 10px; }
 
   &__name {
-    font-size: clamp(44px, 7vw, 72px);
+    font-size: $display-species;
     line-height: 1;
 
     // Rangos superiores a género: sin cursiva
     &--plain { font-weight: 700; letter-spacing: -0.035em; }
-    &--sm { font-size: clamp(40px, 6vw, 56px); }
+    &--sm { font-size: $display-species-sm; }
   }
 
-  &__sub { font-size: 17px; color: var(--muted); }
+  &__sub { font-size: $text-md; color: var(--muted); }
 }
 
 .photo-card {
@@ -29,12 +29,35 @@
   flex-direction: column;
   gap: 14px;
 
+  &__figure {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  // El fondo del marco hace de placeholder mientras la foto carga
+  &__stage {
+    position: relative;
+    border-radius: 16px;
+    background: var(--soft-2);
+  }
+
   &__img {
+    display: block;
     width: 100%;
     aspect-ratio: 3 / 2;
     object-fit: cover;
     border-radius: 16px;
-    background: var(--soft-2);
+  }
+
+  // Fundido del placeholder a la imagen al terminar de cargar
+  &__img,
+  &__thumb-img {
+    opacity: 0;
+    transition: opacity $dur-enter $ease-out;
+
+    &.is-loaded { opacity: 1; }
   }
 
   &__empty {
@@ -47,7 +70,7 @@
     justify-content: center;
     gap: 8px;
     color: var(--muted);
-    font-size: 14px;
+    font-size: $text-xs;
     text-align: center;
     padding: 16px;
   }
@@ -65,13 +88,68 @@
     justify-content: space-between;
     align-items: center;
     gap: 8px;
-    font-size: 15px;
+    font-size: $text-sm;
     font-weight: 600;
   }
 
   &__meta { font-weight: 400; color: var(--muted); }
 
   &__tags { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  // Sobre la foto: colores fijos para que se lea en ambos temas
+  &__counter {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    gap: 0;
+    background: rgba(11, 18, 32, 0.62);
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  // Miniaturas: fila con desplazamiento horizontal en pantallas angostas
+  &__thumbs {
+    display: flex;
+    gap: 8px;
+    padding: 6px;
+    margin: -6px 2px 0;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  &__thumb {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-sm;
+    overflow: hidden;
+    background: var(--soft-2);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: opacity $dur-base, box-shadow $dur-base;
+
+    &:hover { opacity: 1; }
+
+    &[aria-pressed="true"] {
+      opacity: 1;
+      box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+    }
+  }
+
+  &__thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .count {
@@ -81,16 +159,16 @@
   gap: 12px;
 
   &__num {
-    font-size: clamp(40px, 6vw, 56px);
+    font-size: $display-species-sm;
     line-height: 1;
     font-weight: 700;
     letter-spacing: -0.04em;
   }
 
-  &__label { font-size: 19px; font-weight: 600; }
+  &__label { font-size: $text-xl; font-weight: 600; }
 
-  &--sm &__num { font-size: 36px; letter-spacing: -0.035em; }
-  &--sm &__label { font-size: 17px; }
+  &--sm &__num { font-size: $text-7xl; letter-spacing: -0.035em; }
+  &--sm &__label { font-size: $text-md; }
 }
 
 .split-row {
@@ -107,8 +185,8 @@
     gap: 8px;
   }
 
-  &__code { font: 400 12px $font-mono; color: var(--muted); }
-  &__note { font-size: 15px; line-height: 23px; color: var(--muted); }
+  &__code { font: 400 $text-2xs $font-mono; color: var(--muted); }
+  &__note { font-size: $text-sm; line-height: 1.54; color: var(--muted); }
 }
 
 .source-links {

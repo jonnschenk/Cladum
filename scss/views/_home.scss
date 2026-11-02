@@ -1,0 +1,309 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+// Portada de Explorar
+.explore-home {
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+
+  @include down($bp-sm) { gap: 40px; }
+
+  &__hero {
+    @include card($radius-xl);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 56px 48px 40px;
+    background:
+      radial-gradient(110% 90% at 100% 0%, var(--accent-wash) 0%, transparent 60%),
+      var(--surface);
+
+    @include down($bp-md) { padding: 40px 28px 32px; }
+    @include down($bp-sm) { padding: 28px 20px 24px; gap: 24px; }
+  }
+
+  // Decoración: un cladograma, guiño al nombre de la marca
+  &__cladogram {
+    position: absolute;
+    top: 36px;
+    right: 44px;
+    width: 220px;
+    stroke: var(--border);
+    stroke-width: 2;
+    stroke-linecap: round;
+    pointer-events: none;
+
+    @include down($bp-md) { display: none; }
+  }
+
+  &__node {
+    fill: var(--accent);
+    stroke: none;
+    opacity: 0.55;
+  }
+
+  &__intro {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 760px;
+  }
+
+  &__title {
+    font-size: $display-home;
+    line-height: 1.02;
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
+  &__lead {
+    max-width: 620px;
+    font-size: $text-md;
+    line-height: 1.6;
+    color: var(--muted);
+
+    @include down($bp-sm) { font-size: $text-base; line-height: 1.57; }
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+    gap: 16px 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--soft);
+  }
+
+  // El valor se ve arriba, pero en el DOM la etiqueta va primero (dt → dd)
+  &__stat {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 4px;
+  }
+
+  &__stat-label { font-size: $text-xs; color: var(--muted); }
+
+  &__stat-value {
+    min-height: 36px;
+    font-size: $text-6xl;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Ejemplos de búsqueda: pegados al buscador, del que dependen
+  &__examples {
+    position: relative;
+    margin-top: -14px;
+  }
+
+  &__trace {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  &__section-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+  }
+
+  &__section-text {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__section-title {
+    font-size: $text-5xl;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  &__section-lead {
+    max-width: 560px;
+    font-size: $text-sm;
+    line-height: 1.54;
+    color: var(--muted);
+  }
+
+  &__recent {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__recent-link {
+    color: var(--ink);
+    text-decoration: none;
+    transition: transform $dur-slow $ease-spring;
+
+    &:hover { color: var(--ink); transform: translateY(-1px); }
+  }
+
+  &__recent-tag {
+    font: 500 $text-3xs $font-mono;
+    color: var(--muted);
+  }
+
+  &__specimens {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+    gap: 20px;
+  }
+
+  &__kingdoms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
+    gap: 12px;
+  }
+}
+
+// Tarjeta de especie con fotografía. Todo el área es clicable
+// mediante el ::after del enlace; el crédito queda como texto.
+.specimen-card {
+  @include card;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+  transition: transform $dur-slow $ease-spring;
+
+  &:hover { transform: translateY(-3px); }
+  &:focus-within { @include focus-ring; }
+
+  &__media {
+    aspect-ratio: 4 / 3;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--soft-2);
+  }
+
+  &__img,
+  &__skeleton {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+
+  &__img { object-fit: cover; }
+
+  &__placeholder {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    font-size: $text-2xs;
+    text-align: center;
+    color: var(--muted);
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 4px 10px 0;
+  }
+
+  &__name {
+    font-size: $text-3xl;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  &__link {
+    color: var(--ink);
+    text-decoration: none;
+
+    &:hover { color: var(--ink); }
+    &:focus-visible { outline: none; }
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+  }
+
+  &__common {
+    width: 100%;
+    min-height: 22px;
+    font-size: $text-sm;
+    font-weight: 500;
+  }
+
+  &__meta { font-size: $text-2xs; color: var(--muted); }
+
+  &__credit {
+    margin-top: auto;
+    padding: 0 10px 8px;
+    font-size: $text-2xs;
+    line-height: 1.36;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+}
+
+.kingdom-card {
+  @include card($radius-md);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 20px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform $dur-slow $ease-spring;
+
+  &:hover { color: var(--ink); transform: translateY(-2px); }
+
+  &__latin {
+    font-size: $text-2xl;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  &__common { font-size: $text-xs; color: var(--muted); }
+
+  &__count {
+    min-height: 22px;
+    margin-top: 14px;
+    font-size: $text-sm;
+    font-weight: 600;
+  }
+
+  &__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    padding-top: 10px;
+    color: var(--muted);
+  }
+
+  &__key { font: 400 $text-3xs $font-mono; }
+}

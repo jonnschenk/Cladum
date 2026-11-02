@@ -27,12 +27,12 @@
     &:hover { color: var(--ink); }
   }
 
-  &__name { font-size: 20px; }
-  &__author { font-size: 14px; color: var(--muted); }
-  &__meta { font-size: 13px; color: var(--muted); }
+  &__name { font-size: $text-2xl; }
+  &__author { font-size: $text-xs; color: var(--muted); }
+  &__meta { font-size: $text-2xs; color: var(--muted); }
 
   &__date {
-    font: 400 12px $font-mono;
+    font: 400 $text-2xs $font-mono;
     color: var(--muted);
 
     @include down($bp-sm) { display: none; }

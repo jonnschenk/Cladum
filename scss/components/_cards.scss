@@ -26,22 +26,22 @@
   }
 
   &__title {
-    font-size: 22px;
-    line-height: 28px;
+    font-size: $text-3xl;
+    line-height: 1.2;
     font-weight: 700;
     letter-spacing: -0.02em;
   }
 
   &__lead {
-    font-size: 24px;
-    line-height: 30px;
+    font-size: $text-4xl;
+    line-height: 1.24;
     font-weight: 700;
     letter-spacing: -0.025em;
   }
 
   &__text {
-    font-size: 15px;
-    line-height: 24px;
+    font-size: $text-sm;
+    line-height: 1.62;
 
     &--muted { color: var(--muted); }
   }
@@ -63,8 +63,8 @@
   flex-direction: column;
   gap: 6px;
 
-  &__label { font-size: 12px; font-weight: 600; color: var(--muted); }
-  &__value { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  &__label { font-size: $text-2xs; font-weight: 600; color: var(--muted); }
+  &__value { font-size: $text-md; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   &__check { display: inline-flex; color: var(--ok-text); }
 }
 
@@ -86,25 +86,25 @@
     }
   }
 
-  &__term { font-size: 14px; color: var(--muted); }
+  &__term { font-size: $text-xs; color: var(--muted); }
 
   &__desc {
-    font-size: 16px;
+    font-size: $text-base;
     font-weight: 500;
     overflow-wrap: anywhere;
 
-    &--mono { font-family: $font-mono; font-size: 15px; }
+    &--mono { font-family: $font-mono; font-size: $text-sm; }
   }
 
   // Texto secundario en línea (idioma, código de la API)
   &__aside { font-weight: 400; color: var(--muted); }
-  &__code { font: 400 12px $font-mono; color: var(--muted); }
+  &__code { font: 400 $text-2xs $font-mono; color: var(--muted); }
 
   &__note {
     display: block;
     margin-top: 4px;
-    font-size: 13px;
-    line-height: 19px;
+    font-size: $text-2xs;
+    line-height: 1.55;
     font-weight: 400;
     color: var(--muted);
   }
@@ -132,6 +132,6 @@
   }
 
   &__body { display: block; }
-  &__title { display: block; font-size: 15px; font-weight: 600; color: var(--warn); }
-  &__text { display: block; font-size: 14px; line-height: 21px; }
+  &__title { display: block; font-size: $text-sm; font-weight: 600; color: var(--warn); }
+  &__text { display: block; font-size: $text-xs; line-height: 1.58; }
 }

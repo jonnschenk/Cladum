@@ -11,8 +11,9 @@ import { OCCURRENCE_PAGE_SIZE } from '../../config.js';
 import { renderTaxIndex } from '../taxIndex.js';
 import { isGeneralized } from './speciesView.js';
 import { announce } from '../../handlers/feedback.js';
+import { renderLoading, renderError, withSlowNotice, loadMore } from '../states.js';
 import {
-  icons, verified, external, noData, taxonName, apiLink, externalLink, stateBlock, skeletonPage,
+  icons, verified, external, noData, taxonName, apiLink, externalLink, stateBlock,
 } from '../components.js';
 
 const value = (v) => (v ? esc(v) : noData());
@@ -114,15 +115,17 @@ function recordDetail(r, taxon) {
     </section>`;
 }
 
-function toolbar({ countries, country, coords }) {
-  const opts = countries
+const countryOptions = (countries, country) =>
+  `<option value="">País · Todos</option>${countries
     .map((c) => `<option value="${esc(c.name)}" ${c.name === country ? 'selected' : ''}>${esc(countryName(c.name))} · ${formatNumber(c.count)}</option>`)
-    .join('');
+    .join('')}`;
+
+function toolbar({ countries, country, coords }) {
   return `
     <div class="toolbar">
       <label class="select">
         <span class="u-visually-hidden">País</span>
-        <select class="select__control" data-country><option value="">País · Todos</option>${opts}</select>
+        <select class="select__control" data-country>${countryOptions(countries, country)}</select>
         <span class="select__chevron">${icons.chevron(14)}</span>
       </label>
       <label class="switch"><input class="switch__input" type="checkbox" role="switch" data-coords ${coords ? 'checked' : ''}>Solo con coordenadas</label>
@@ -139,42 +142,54 @@ export async function renderOccurrencesView(app, route, { signal }) {
   const coords = route.params.get('coords') !== '0';
   const query = { taxonKey: key, country, hasCoordinate: coords ? true : undefined, limit: OCCURRENCE_PAGE_SIZE };
 
-  app.innerHTML = skeletonPage();
+  // El enlace de vuelta ya se conoce: se muestra real mientras carga el resto
+  renderLoading(app, 'occurrences', {
+    before: `
+      <nav class="breadcrumb" aria-label="Ruta">
+        <ol class="breadcrumb__list">
+          <li class="breadcrumb__item"><a class="breadcrumb__back" href="${buildHash(`/especie/${key}`)}">${icons.back(16)}Volver a la ficha</a></li>
+        </ol>
+      </nav>`,
+    countLabel: coords ? 'registros con coordenadas' : 'registros',
+  });
 
   let taxon;
   let data;
   let countries = [];
   try {
-    const [t, d, c] = await Promise.all([
+    const [t, d, c] = await withSlowNotice(Promise.all([
       getSpecies(key, { signal }),
       searchOccurrences(query, { signal }),
       getCountryFacet(key, coords ? true : undefined, { signal }).catch(() => []),
-    ]);
+    ]), app);
     taxon = t;
     data = d;
     countries = c;
   } catch (error) {
     if (isAbort(error)) return;
-    app.innerHTML = stateBlock({
-      type: 'error',
-      title: 'No se pudieron consultar las ocurrencias',
-      text: 'GBIF no respondió. Tus filtros se conservaron.',
-      actions: '<button class="btn btn--primary" type="button" data-retry>Reintentar</button>',
-      level: 1,
+    renderError(app, error, {
+      onRetry: () => navigate(`/especie/${key}/ocurrencias`, { country, coords: coords ? '' : '0' }),
+      copy: { 'not-found': { title: 'No encontramos ese taxón', text: `GBIF no tiene un taxón con el identificador ${key}.` } },
     });
-    app.querySelector('[data-retry]').addEventListener('click', () =>
-      navigate(`/especie/${key}/ocurrencias`, { country, coords: coords ? '' : '0' }),
-    );
     return;
   }
 
   const name = taxon.canonicalName || taxon.scientificName;
-  setState({ lastSpecies: { key: taxon.key, name } });
+  setState({ lastSpecies: { key: taxon.key, name, rank: taxon.rank } });
   document.title = `Ocurrencias de ${name} · Cladum`;
 
   let records = [...data.results];
+  let total = data.count;
   let selected = 0;
   let offset = data.offset + data.limit;
+  let filters = { country, coords };
+  let currentQuery = query;
+  let view = 'list';
+
+  const countLabel = () =>
+    `${filters.coords ? 'registros con coordenadas' : 'registros'}${filters.country ? ` en ${esc(countryName(filters.country))}` : ''}`;
+  const countHtml = () =>
+    `<span class="count__num">${formatNumber(total)}</span><span class="count__label">${countLabel()}</span>`;
 
   app.innerHTML = `
     <div class="stack stack--inherit" data-occ-view>
@@ -186,7 +201,7 @@ export async function renderOccurrencesView(app, route, { signal }) {
         <li class="breadcrumb__item" aria-current="page">Ocurrencias</li>
       </ol>
     </nav>
-    <div class="layout u-view-enter">
+    <div class="layout u-fade-in">
       <div class="layout__aside">${renderTaxIndex(taxon)}</div>
       <section class="layout__content" aria-labelledby="occ-title">
         <header class="species-hero">
@@ -203,9 +218,9 @@ export async function renderOccurrencesView(app, route, { signal }) {
 
         ${toolbar({ countries, country, coords })}
 
-        <div class="split-row">
+        <div class="split-row" data-count-row>
           <div class="split-row__main">
-            <p class="count count--sm"><span class="count__num">${formatNumber(data.count)}</span><span class="count__label">${coords ? 'registros con coordenadas' : 'registros'}${country ? ` en ${esc(countryName(country))}` : ''}</span></p>
+            <p class="count count--sm" data-count>${countHtml()}</p>
             <span class="split-row__note">No es toda la distribución ni un recuento de población.</span>
           </div>
           <span class="pill pill--raised" data-loaded><span class="u-mono">${records.length}</span>&nbsp;cargados</span>
@@ -216,7 +231,7 @@ export async function renderOccurrencesView(app, route, { signal }) {
 
         <section class="source-links" aria-labelledby="query-title">
           <h2 class="eyebrow" id="query-title">Consulta · Verificado · GBIF</h2>
-          ${apiLink(occurrencesUrl(query), 'occurrence/search')}
+          <span data-query-link>${apiLink(occurrencesUrl(query), 'occurrence/search')}</span>
         </section>
       </section>
     </div>
@@ -227,19 +242,43 @@ export async function renderOccurrencesView(app, route, { signal }) {
   const root = app.querySelector('[data-occ-view]');
   const recordsSlot = app.querySelector('[data-records]');
   const detailSlot = app.querySelector('[data-detail-slot]');
+  const countRow = app.querySelector('[data-count-row]');
+  const count = app.querySelector('[data-count]');
   const loaded = app.querySelector('[data-loaded]');
+  const countrySelect = app.querySelector('[data-country]');
+  const coordsSwitch = app.querySelector('[data-coords]');
 
-  const paintDetail = () => {
+  const go = (next) => {
+    const f = { ...filters, ...next };
+    navigate(`/especie/${key}/ocurrencias`, { country: f.country, coords: f.coords ? '' : '0' });
+  };
+
+  const paintLoaded = () => {
+    loaded.innerHTML = `<span class="u-mono">${records.length}</span>&nbsp;cargados`;
+  };
+
+  const paintDetail = ({ animate = false } = {}) => {
     detailSlot.innerHTML = records[selected] ? recordDetail(records[selected], taxon) : '';
+    if (animate) detailSlot.firstElementChild?.classList.add('u-swap');
+  };
+
+  /** Sin registros: explica qué filtro los deja fuera y ofrece quitarlo. */
+  const emptyState = () => {
+    const actions = [
+      filters.country ? '<button class="btn btn--secondary" type="button" data-clear-country>Quitar país</button>' : '',
+      filters.coords ? '<button class="btn btn--secondary" type="button" data-include-all>Incluir registros sin coordenadas</button>' : '',
+    ].join('');
+    return stateBlock({
+      type: 'no-results',
+      title: `Ningún registro${filters.country ? ` en ${esc(countryName(filters.country))}` : ''}${filters.coords ? ' con coordenadas' : ''}`,
+      text: actions ? 'GBIF no tiene registros de este taxón que cumplan estos filtros.' : 'GBIF no tiene registros de este taxón.',
+      actions,
+    });
   };
 
   const paintList = () => {
     if (!records.length) {
-      recordsSlot.innerHTML = stateBlock({
-        type: 'no-results',
-        title: 'Sin registros con estos filtros',
-        text: 'Prueba con otro país o incluye registros sin coordenadas.',
-      });
+      recordsSlot.innerHTML = emptyState();
       detailSlot.innerHTML = '';
       return;
     }
@@ -247,7 +286,9 @@ export async function renderOccurrencesView(app, route, { signal }) {
       <div class="card card--flush records">
         <div class="records__head" aria-hidden="true"><span>ID GBIF</span><span>País / región</span><span>Observación</span><span>Observador/a</span><span>Incertidumbre</span><span>Calidad</span></div>
         <ul class="records__list" data-list>${records.map((r, i) => recordRow(r, i === selected)).join('')}</ul>
-        ${offset < data.count ? '<div class="load-more"><button class="btn btn--secondary" type="button" data-more>Cargar más</button></div>' : ''}
+        <div class="load-more" data-more-wrap>${offset < total
+          ? '<button class="btn btn--secondary" type="button" data-more>Cargar más</button>'
+          : `<p class="load-more__end">Mostrando ${records.length === 1 ? 'el único registro' : `los ${formatNumber(records.length)} registros`}</p>`}</div>
       </div>`;
     paintDetail();
   };
@@ -262,6 +303,8 @@ export async function renderOccurrencesView(app, route, { signal }) {
     detailSlot.innerHTML = '';
   };
 
+  const paint = () => (view === 'map' ? paintMap() : paintList());
+
   paintList();
 
   // Delegación de eventos sobre la vista
@@ -270,42 +313,105 @@ export async function renderOccurrencesView(app, route, { signal }) {
     if (row) {
       selected = records.findIndex((r) => String(r.key) === row.dataset.record);
       recordsSlot.querySelectorAll('[data-record]').forEach((b) => b.setAttribute('aria-pressed', String(b === row)));
-      paintDetail();
+      paintDetail({ animate: true });
       detailSlot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       return;
     }
 
     const viewButton = event.target.closest('[data-view]');
     if (viewButton || event.target.closest('[data-back-list]')) {
-      const view = viewButton ? viewButton.dataset.view : 'list';
+      view = viewButton ? viewButton.dataset.view : 'list';
       root.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === view)));
-      if (view === 'map') paintMap();
-      else paintList();
+      paint();
+      return;
+    }
+
+    if (event.target.closest('[data-clear-country]')) {
+      go({ country: '' });
+      return;
+    }
+    if (event.target.closest('[data-include-all]')) {
+      go({ coords: false });
       return;
     }
 
     const more = event.target.closest('[data-more]');
     if (more) {
-      more.disabled = true;
-      more.textContent = 'Cargando…';
+      loadMore.loading(more);
       try {
-        const page = await searchOccurrences({ ...query, offset });
+        const page = await searchOccurrences({ ...currentQuery, offset });
         records = records.concat(page.results);
         offset = page.offset + page.limit;
-        loaded.innerHTML = `<span class="u-mono">${records.length}</span>&nbsp;cargados`;
-        paintList();
+        paintLoaded();
+        recordsSlot.querySelector('[data-list]').insertAdjacentHTML('beforeend', page.results.map((r) => recordRow(r, false)).join(''));
         announce(`${page.results.length} registros más cargados. ${records.length} en total.`);
+        if (offset < total) loadMore.idle(more);
+        else loadMore.end(more.parentElement, `Mostrando los ${formatNumber(records.length)} registros`);
       } catch {
-        more.disabled = false;
-        more.textContent = 'No se pudo cargar. Reintentar';
+        loadMore.error(more);
       }
     }
   });
 
-  app.querySelector('[data-country]').addEventListener('change', (event) =>
-    navigate(`/especie/${key}/ocurrencias`, { country: event.target.value, coords: coords ? '' : '0' }),
-  );
-  app.querySelector('[data-coords]').addEventListener('change', (event) =>
-    navigate(`/especie/${key}/ocurrencias`, { country, coords: event.target.checked ? '' : '0' }),
-  );
+  root.addEventListener('change', (event) => {
+    if (event.target === countrySelect) go({ country: countrySelect.value });
+    if (event.target === coordsSwitch) go({ coords: coordsSwitch.checked });
+  });
+
+  /**
+   * Cambio de filtro: la vista no se redibuja. Lo anterior se atenúa mientras llega
+   * lo nuevo, y el foco se queda en el control que se usó.
+   */
+  const dimmed = [countRow, recordsSlot, detailSlot];
+  const setUpdating = (on) => {
+    dimmed.forEach((el) => {
+      el.classList.toggle('is-updating', on);
+      el.inert = on;
+    });
+    recordsSlot.setAttribute('aria-busy', String(on));
+  };
+
+  async function update(nextRoute, { signal: updateSignal }) {
+    const next = { country: nextRoute.params.get('country') ?? '', coords: nextRoute.params.get('coords') !== '0' };
+    const nextQuery = { ...query, country: next.country, hasCoordinate: next.coords ? true : undefined };
+    // Si se llegó con Atrás/Adelante, los controles reflejan la URL desde ya
+    countrySelect.value = next.country;
+    coordsSwitch.checked = next.coords;
+
+    setUpdating(true);
+    count.querySelector('.count__label').innerHTML = '<span data-loading-text>Actualizando…</span>';
+
+    try {
+      const [d, c] = await withSlowNotice(Promise.all([
+        searchOccurrences(nextQuery, { signal: updateSignal }),
+        getCountryFacet(key, next.coords ? true : undefined, { signal: updateSignal }).catch(() => countries),
+      ]), root);
+
+      filters = next;
+      currentQuery = nextQuery;
+      countries = c;
+      records = [...d.results];
+      total = d.count;
+      offset = d.offset + d.limit;
+      selected = 0;
+
+      countrySelect.innerHTML = countryOptions(countries, filters.country);
+      count.innerHTML = countHtml();
+      paintLoaded();
+      app.querySelector('[data-query-link]').innerHTML = apiLink(occurrencesUrl(currentQuery), 'occurrence/search');
+      paint();
+      recordsSlot.firstElementChild?.classList.add('u-swap');
+      announce(`${formatNumber(total)} ${countLabel()}`);
+      setUpdating(false);
+    } catch (error) {
+      // Cancelada por un cambio más reciente: ese se encarga de la vista
+      if (isAbort(error)) return;
+      setUpdating(false);
+      count.innerHTML = `<span class="count__label">No se pudo actualizar el recuento</span>`;
+      detailSlot.innerHTML = '';
+      renderError(recordsSlot, error, { level: 2, focus: true, onRetry: () => go(next) });
+    }
+  }
+
+  return { update };
 }

@@ -1,0 +1,42 @@
+// ─────────────────────────────────────────────
+// Tipografía: el único lugar para cambiar tamaños de texto.
+//
+// · Para agrandar o achicar TODO el texto, cambia $text-scale
+//   (1.1 = 10% más grande, 0.9 = 10% más chico).
+// · Para cambiar un tamaño concreto, edita su variable abajo:
+//   afecta a todos los elementos que la usan (ver comentario).
+// · El interlineado es proporcional al tamaño, así que se
+//   ajusta solo.
+// ─────────────────────────────────────────────
+
+@use "sass:math";
+
+$text-scale: 1;
+
+@function scaled($px) {
+  @return math.round($px * $text-scale);
+}
+
+// ── Escala de texto ─────────────────────────
+$text-3xs: scaled(10px);  // identificadores GBIF en mono, etiquetas mínimas
+$text-2xs: scaled(11px);  // eyebrow, notas, pills, metadatos
+$text-xs:  scaled(12px);  // etiquetas, textos de apoyo pequeños
+$text-sm:  scaled(13px);  // botones, textos secundarios
+$text-base: scaled(14px); // texto normal del cuerpo
+$text-md:  scaled(15px);  // párrafos de introducción, subtítulos
+$text-lg:  scaled(16px);  // resaltados medianos
+$text-xl:  scaled(17px);  // nombres en listas
+$text-2xl: scaled(18px);  // títulos de estado, nombres de tarjetas
+$text-3xl: scaled(20px);  // títulos de tarjeta
+$text-4xl: scaled(21px);  // entradillas de tarjeta
+$text-5xl: scaled(24px);  // títulos de sección, logo
+$text-6xl: scaled(29px);  // cifras destacadas
+$text-7xl: scaled(32px);  // cifras grandes
+
+// ── Títulos principales (se adaptan al ancho de pantalla) ──
+// clamp(mínimo en móvil, crecimiento según ancho, máximo en escritorio)
+$display-home:       clamp(scaled(33px), 5.63vw * $text-scale, scaled(40px)); // portada: "La biodiversidad…"
+$display-species:    clamp(scaled(39px), 6.16vw * $text-scale, scaled(64px)); // ficha: nombre científico
+$display-species-sm: clamp(scaled(35px), 5.28vw * $text-scale, scaled(50px)); // ficha: nombre largo y conteo de ocurrencias
+$display-page:       clamp(scaled(30px), 4.4vw * $text-scale, scaled(31px));  // títulos de página (Ocurrencias, Guardadas)
+$display-result:     clamp(scaled(22px), 4.4vw * $text-scale, scaled(44px));  // búsqueda: primer resultado

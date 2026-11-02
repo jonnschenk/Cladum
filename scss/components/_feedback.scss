@@ -1,0 +1,143 @@
+@use "../abstracts/tokens" as *;
+@use "../abstracts/mixins" as *;
+
+// ─────────────────────────────────────────────
+// Avisos: chips de acción, banda de conexión, cuenta regresiva,
+// fin de lista, estado de sugerencias y toasts
+// ─────────────────────────────────────────────
+
+// Enlace con forma de chip (ejemplos, quitar un filtro)
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: $radius-pill;
+  background: var(--accent-wash);
+  color: var(--accent-text);
+  font-size: $text-xs;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color $dur-micro, transform $dur-slow $ease-spring;
+
+  &:hover { background: var(--soft); color: var(--ink); }
+  &:active { transform: scale(0.97); }
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  &__label {
+    font-size: $text-xs;
+    color: var(--muted);
+  }
+}
+
+// Sugerencia "¿Quisiste decir…?" con su procedencia
+.did-you-mean {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: $text-base;
+
+  &__source {
+    font: 400 $text-3xs $font-mono;
+    color: var(--muted);
+  }
+}
+
+// Cuenta regresiva de un 429. El número no se anuncia en cada segundo.
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 $text-xs $font-mono;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+// Banda persistente bajo el encabezado cuando no hay conexión
+.net-banner {
+  max-width: $container;
+  margin: 10px auto 0;
+  padding: 10px 18px;
+  border-radius: $radius-md;
+  background: var(--warn-wash);
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: $text-xs;
+  line-height: 1.5;
+  box-shadow: inset 0 0 0 1px var(--border);
+  animation: skeleton-in $dur-enter $ease-out;
+
+  &[hidden] { display: none; }
+
+  svg { flex: none; color: var(--warn); }
+}
+
+// Pie de una lista paginada
+.load-more {
+  &__end {
+    font-size: $text-xs;
+    color: var(--muted);
+  }
+}
+
+// Estado del panel de sugerencias (cargando / sin sugerencias)
+.suggest__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  font-size: $text-xs;
+  color: var(--muted);
+
+  &[hidden] { display: none; }
+}
+
+// La región viva siempre existe; el toast se inserta dentro.
+// Así los lectores de pantalla anuncian cada mensaje.
+.toast-region {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 40;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 18px;
+  border-radius: $radius-pill;
+  background: var(--ink);
+  color: var(--on-ink);
+  font-size: $text-xs;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.45);
+  animation: toast-in $dur-slow $ease-spring;
+
+  &__action {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px); }
+}
+
+.suggest__status .loader { color: var(--accent); }
