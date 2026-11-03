@@ -30,6 +30,12 @@ export const fetchSpecies = apiThunk('species/fetch', async (key, { signal }) =>
     photosFailed: photos.status === 'rejected',
     occ: settled(occ),
   };
+}, {
+  // Si la ficha ya está cargada (p. ej. al volver atrás), no se vuelve a pedir
+  condition: (key, { getState }) => {
+    const { species } = getState();
+    return !(species.key === key && species.status === 'succeeded');
+  },
 });
 
 /** Resumen mínimo de un taxón para "Última ficha" y para guardarlo. */

@@ -44,3 +44,32 @@ export const byParams = (rules, otherwise) => (config) => {
 
 export const page = (results, { count = results.length, offset = 0, limit = 20, endOfRecords = true } = {}) =>
   ({ results, count, offset, limit, endOfRecords });
+
+export const occurrence = (key, extra = {}) => ({
+  key,
+  countryCode: 'MX',
+  stateProvince: 'Jalisco',
+  eventDate: '2024-03-10',
+  recordedBy: 'Ana López',
+  basisOfRecord: 'HUMAN_OBSERVATION',
+  coordinateUncertaintyInMeters: 30,
+  issues: [],
+  ...extra,
+});
+
+/** Respuestas de ejemplo para todas las consultas que hace la app. */
+export function mockGbifDefaults(gbifMock, inatMock) {
+  gbifMock.onGet('/species/5219426').reply(200, jaguar);
+  gbifMock.onGet(/\/species\/\d+$/).reply(200, jaguar);
+  gbifMock.onGet(/\/species\/\d+\/vernacularNames/).reply(200, { results: [{ vernacularName: 'Jaguar', language: 'spa', source: 'CONABIO' }] });
+  gbifMock.onGet('/species/suggest').reply(200, [jaguar]);
+  gbifMock.onGet('/species/match').reply(200, { matchType: 'EXACT', rank: 'SPECIES', usageKey: 5219426 });
+  gbifMock.onGet('/species/search').reply(200, page([jaguar], { count: 1 }));
+  gbifMock.onGet('/occurrence/count').reply(200, 3086010427);
+  gbifMock.onGet('/dataset/search').reply(200, { count: 112000 });
+  gbifMock.onGet('/occurrence/search').reply(byParams([
+    { when: { facet: 'country' }, reply: [200, { facets: [{ field: 'COUNTRY', counts: [{ name: 'MX', count: 2 }] }] }] },
+    { when: { media_type: 'StillImage' }, reply: [200, page([])] },
+  ], [200, page([occurrence(1), occurrence(2)], { count: 2 })]));
+  inatMock.onGet().reply(200, { results: [] });
+}

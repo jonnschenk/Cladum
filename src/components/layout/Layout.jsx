@@ -6,6 +6,8 @@ import { useSelector } from 'react-redux';
 import { selectTheme } from '../../features/ui/uiSlice.js';
 import { Header } from './Header.jsx';
 import { Footer } from './Footer.jsx';
+import { Toast } from '../feedback/Toast.jsx';
+import { Announcer } from '../feedback/Announcer.jsx';
 
 export function Layout() {
   const main = useRef(null);
@@ -37,8 +39,8 @@ export function Layout() {
       </main>
       <Footer />
       {/* Regiones vivas: siempre presentes para que se anuncien sus cambios */}
-      <div className="toast-region" role="status" aria-live="polite" />
-      <p className="u-visually-hidden" role="status" aria-live="polite" />
+      <Toast />
+      <Announcer />
     </>
   );
 }

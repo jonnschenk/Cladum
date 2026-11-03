@@ -30,3 +30,18 @@ export function writeText(key, value) {
     return false;
   }
 }
+
+/**
+ * ¿Se puede guardar en este navegador? Prueba una escritura real.
+ * Devuelve false en modo privado estricto, con el almacenamiento bloqueado o lleno.
+ */
+export function storageAvailable() {
+  try {
+    const probe = 'cladum:probe';
+    localStorage.setItem(probe, '1');
+    localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
