@@ -3,6 +3,28 @@
 Explorador de biodiversidad con datos verificables de [GBIF](https://www.gbif.org).
 Busca especies, recorre su clasificación de reino a especie y consulta sus ocurrencias documentadas, con la procedencia de cada dato siempre visible.
 
+**[Ver demo en vivo →](https://jonnschenk.github.io/Cladum/)**
+
+![Deploy](https://github.com/jonnschenk/Cladum/actions/workflows/deploy.yml/badge.svg)
+![React 19](https://img.shields.io/badge/React-19-149eca)
+![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-2-764abc)
+![Pruebas](https://img.shields.io/badge/pruebas-105_pasando-2ea44f)
+![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)
+
+![Portada de Cladum: buscador de especies con cifras en vivo de GBIF](docs/home.png)
+
+| Ficha de especie | Modo oscuro |
+|---|---|
+| ![Ficha de Panthera onca con índice taxonómico, galería y nomenclatura](docs/especie.png) | ![La misma ficha en modo oscuro](docs/especie-dark.png) |
+
+## Lo más destacado
+
+- **Datos honestos:** cada valor se marca como *Verificado · GBIF*, *Fuente externa* o *Sin dato*, con un enlace a la consulta exacta de la API. Nunca se rellena con información inventada.
+- **Red robusta:** cliente Axios con tiempo máximo, caché y errores tipados; reintento automático ante el límite de consultas (429); cancelación al salir de una vista y descarte de respuestas viejas por `requestId`.
+- **Respaldo de fotografías:** si GBIF no tiene imágenes o fallan al cargar, se buscan en iNaturalist solo con coincidencia exacta de nombre y licencia abierta.
+- **Accesibilidad WCAG 2.2 AA:** combobox ARIA navegable con teclado, foco visible y una región viva que anuncia los cambios de estado.
+- **105 pruebas** con Jest y React Testing Library, sin llamadas reales a la red, y despliegue continuo que no publica si alguna falla.
+
 ## Funciones
 
 - **Explorar:** búsqueda por nombre científico o común con sugerencias en vivo (navegable con teclado), filtros por rango y estado taxonómico, y "¿Quisiste decir…?" cuando no hay coincidencias. Si escribes un género («Quercus»), muestra sus especies.
@@ -25,25 +47,13 @@ Busca especies, recorre su clasificación de reino a especie y consulta sus ocur
 - **Vite** para desarrollo y build
 - APIs: GBIF v1 e iNaturalist v1 (sin clave; iNaturalist solo como respaldo de fotografías)
 
-## Requisitos del proyecto
-
-| Requisito | Dónde se cumple |
-|---|---|
-| Componentes funcionales y hooks | [`src/components/`](src/components), [`src/pages/`](src/pages) |
-| Custom hooks | [`src/hooks/`](src/hooks): `useThunk`, `useSuggestions`, `useDebounce`, `useSlowNotice`, `useCountdown`, `usePhotoFallback`, `useOnlineStatus`, `useDocumentTitle`, `useAnnounce` |
-| SASS | [`src/styles/`](src/styles), importado en [`src/main.jsx`](src/main.jsx) |
-| Responsiva | Rejillas fluidas y puntos de quiebre en [`src/styles/abstracts/_mixins.scss`](src/styles/abstracts/_mixins.scss) |
-| 3 páginas o más con react-router | 6 rutas en [`src/App.jsx`](src/App.jsx) |
-| Redux Toolkit | [`src/app/store.js`](src/app/store.js) y [`src/features/`](src/features): `ui`, `favorites`, `search`, `species`, `occurrences`, `home` |
-| Axios con una API gratuita | [`src/services/http.js`](src/services/http.js), [`gbif.js`](src/services/gbif.js), [`inaturalist.js`](src/services/inaturalist.js) |
-| Pruebas de componentes, funciones y custom hooks | 20 archivos `*.test.js(x)`, más de 100 pruebas (ver [Pruebas](#pruebas)) |
-
 ## Estructura
 
 ```
 cladum/
 ├── index.html                 entrada de Vite (tema sin parpadeo y pantalla de arranque)
 ├── public/favicon.svg
+├── docs/                      capturas de pantalla del README
 └── src/
     ├── main.jsx               Provider de Redux + HashRouter
     ├── App.jsx                rutas
@@ -61,7 +71,7 @@ cladum/
     │   ├── gbif.js
     │   ├── inaturalist.js     respaldo de fotografías
     │   └── photos.js          elige la fuente: GBIF primero, iNaturalist si falla
-    ├── hooks/                 custom hooks
+    ├── hooks/                 custom hooks (useThunk, useSuggestions, usePhotoFallback…)
     ├── pages/                 una por ruta
     ├── components/
     │   ├── layout/            encabezado, pie y estructura común
@@ -183,6 +193,10 @@ Cladum se diferencia por hacer visible la procedencia de cada dato, enlazar la c
 - Mapa de ocurrencias con Leaflet, donde los registros generalizados se dibujen como áreas y no como puntos.
 - Búsqueda en lenguaje natural con IA ("felinos nocturnos de México" → filtros de GBIF).
 - Migración a TypeScript.
+
+## Licencia
+
+El código está bajo la licencia [MIT](LICENSE). Los datos y las fotografías no: conservan la licencia de su fuente.
 
 ---
 

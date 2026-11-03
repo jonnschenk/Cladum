@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Cladum: explorador de biodiversidad con datos verificables de GBIF.",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
