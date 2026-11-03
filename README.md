@@ -160,7 +160,11 @@ Cada foto indica su fuente (*vía GBIF* o *vía iNaturalist*), su autoría, su l
 
 ## Despliegue
 
-`npm run build` genera un sitio estático en `dist/`. Como las rutas usan `#` y el build usa rutas relativas, funciona en GitHub Pages, Netlify, Vercel o Firebase Hosting sin configuración extra: solo hay que publicar la carpeta `dist/`.
+El sitio se publica en GitHub Pages con GitHub Actions ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)): en cada push a `main` se instalan las dependencias, se corren las pruebas, se compila con Vite y se publica `dist/`. Si alguna prueba falla, no se publica.
+
+Configuración única en GitHub: **Settings → Pages → Source: GitHub Actions**.
+
+Como las rutas usan `#` y el build usa rutas relativas, `dist/` también funciona en Netlify, Vercel o Firebase Hosting sin configuración extra.
 
 ## Versión anterior
 
