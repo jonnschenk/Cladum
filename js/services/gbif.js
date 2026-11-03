@@ -196,6 +196,7 @@ function toPhoto(record) {
   const media = record?.media?.find((m) => m.type === 'StillImage' && m.identifier);
   if (!record || !media) return null;
   return {
+    source: 'gbif',
     url: media.identifier,
     creator: media.creator || media.rightsHolder || null,
     license: media.license || record.license || null,
@@ -204,12 +205,6 @@ function toPhoto(record) {
     occurrenceKey: record.key,
     basisOfRecord: record.basisOfRecord || null,
   };
-}
-
-/** Primera fotografía documentada: una ocurrencia con media StillImage. */
-export async function getPhoto(taxonKey, opts) {
-  const data = await searchOccurrences({ taxonKey, mediaType: 'StillImage', limit: 1 }, opts);
-  return toPhoto(data.results?.[0]);
 }
 
 /**

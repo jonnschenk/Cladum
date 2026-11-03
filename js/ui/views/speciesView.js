@@ -1,8 +1,9 @@
 // Vista: Ficha de especie
 
 import {
-  getSpecies, getVernacularNames, pickVernacular, getPhotos, searchOccurrences, apiUrl,
+  getSpecies, getVernacularNames, pickVernacular, searchOccurrences, apiUrl,
 } from '../../services/gbif.js';
+import { getTaxonPhotos, getInatPhotos } from '../../services/photos.js';
 import { bindSaveButtons, announce } from '../../handlers/feedback.js';
 import { isFavorite } from '../../state/favorites.js';
 import { setState } from '../../state/store.js';
@@ -45,10 +46,7 @@ function sizedUrl(url, size) {
 
 const photoAlt = (photo, name) => `Fotografía de ${name}${photo.creator ? `, por ${photo.creator}` : ''}`;
 
-function photoStage(photo, name, failed = false) {
-  if (failed) {
-    return `<div class="photo-card__empty">${icons.image(28)}<span>No se pudo cargar esta fotografía desde su fuente original.</span>${noData()}</div>`;
-  }
+function photoStage(photo, name) {
   return `
     <img class="photo-card__img" src="${esc(sizedUrl(photo.url, 'large'))}" decoding="async"
       alt="${esc(photoAlt(photo, name))}" data-photo>`;
@@ -56,6 +54,7 @@ function photoStage(photo, name, failed = false) {
 
 function photoCaption(photo) {
   const license = licenseLabel(photo.license);
+  const fromGbif = photo.source === 'gbif';
   const originalUrl = photo.references || `https://www.gbif.org/occurrence/${photo.occurrenceKey}`;
   return `
     <div class="photo-card__credit">
@@ -63,9 +62,11 @@ function photoCaption(photo) {
       ${externalLink(originalUrl, 'Ver original')}
     </div>
     <div class="photo-card__tags">
-      ${external('Fuente externa · vía GBIF')}
-      <span class="pill">${esc(basisLabel(photo.basisOfRecord))}</span>
-      <span class="pill pill--mono pill--muted">Registro GBIF:${esc(photo.occurrenceKey)}</span>
+      ${external(`Fuente externa · vía ${fromGbif ? 'GBIF' : 'iNaturalist'}`)}
+      ${fromGbif
+        ? `<span class="pill">${esc(basisLabel(photo.basisOfRecord))}</span>
+      <span class="pill pill--mono pill--muted">Registro GBIF:${esc(photo.occurrenceKey)}</span>`
+        : `<span class="pill pill--mono pill--muted">Taxón iNat:${esc(photo.taxonId)}</span>`}
     </div>`;
 }
 
@@ -76,7 +77,7 @@ function photoThumb(photo, index, total, selected) {
   return `
     <button class="photo-card__thumb" type="button" aria-pressed="${selected}" tabindex="${selected ? 0 : -1}"
       data-photo-index="${index}" aria-label="Fotografía ${index + 1} de ${total}${photo.creator ? `, por ${esc(photo.creator)}` : ''}">
-      <img class="photo-card__thumb-img" src="${esc(sizedUrl(photo.url, 'small'))}" alt="" loading="lazy" decoding="async">
+      <img class="photo-card__thumb-img" src="${esc(sizedUrl(photo.url, 'small'))}" alt="" decoding="async">
     </button>`;
 }
 
@@ -91,55 +92,49 @@ function revealOnLoad(img) {
 }
 
 /** Foto principal + miniaturas. El crédito vive junto a la imagen y cambia con ella. */
-function photoGallery(photos, name, failed = false) {
+function photoGallery(photos, name, { selected = 0, empty = '' } = {}) {
   if (!photos.length) {
-    // Una consulta fallida no equivale a "no hay fotos": se dice cuál de los dos pasó
-    const message = failed
-      ? 'No se pudieron consultar las fotografías en GBIF. Inténtalo más tarde.'
-      : 'No hay fotografía documentada en GBIF para este taxón.';
     return `
       <section class="photo-card" aria-label="Fotografía">
-        <div class="photo-card__empty">${icons.image(28)}<span>${message}</span>${noData()}</div>
+        <div class="photo-card__empty">${icons.image(28)}<span>${empty}</span>${noData()}</div>
       </section>`;
   }
   const total = photos.length;
+  const photo = photos[selected];
   return `
     <section class="photo-card" aria-label="${total > 1 ? `Fotografías (${total})` : 'Fotografía'}" data-gallery>
       <figure class="photo-card__figure">
-        <div class="photo-card__stage" data-photo-stage>${photoStage(photos[0], name)}</div>
-        ${total > 1 ? `<span class="pill photo-card__counter" aria-hidden="true"><span data-photo-current>1</span>&nbsp;de ${total}</span>` : ''}
-        <figcaption class="photo-card__caption" data-photo-caption>${photoCaption(photos[0])}</figcaption>
+        <div class="photo-card__stage" data-photo-stage>${photoStage(photo, name)}</div>
+        ${total > 1 ? `<span class="pill photo-card__counter" aria-hidden="true"><span data-photo-current>${selected + 1}</span>&nbsp;de ${total}</span>` : ''}
+        <figcaption class="photo-card__caption" data-photo-caption>${photoCaption(photo)}</figcaption>
       </figure>
       ${total > 1 ? `
         <div class="photo-card__thumbs" role="group" aria-label="Elegir fotografía" data-photo-thumbs>
-          ${photos.map((p, i) => photoThumb(p, i, total, i === 0)).join('')}
+          ${photos.map((p, i) => photoThumb(p, i, total, i === selected)).join('')}
         </div>` : ''}
     </section>`;
 }
 
 /** Selección con clic o con flechas / Inicio / Fin (tabindex itinerante). */
-function bindGallery(root, photos, name) {
+function bindGallery(root, photos, name, { selected, rights, onSelect, onBroken }) {
   const gallery = root.querySelector('[data-gallery]');
   if (!gallery) return;
   const stage = gallery.querySelector('[data-photo-stage]');
   const caption = gallery.querySelector('[data-photo-caption]');
   const current = gallery.querySelector('[data-photo-current]');
-  const rights = root.querySelector('[data-photo-rights]');
   const thumbs = [...gallery.querySelectorAll('[data-photo-index]')];
 
-  const watchImage = () => {
+  const watchImage = (photo) => {
     const img = stage.querySelector('[data-photo]');
     if (!img) return;
-    img.addEventListener('error', () => {
-      stage.innerHTML = photoStage(null, name, true);
-    }, { once: true });
+    img.addEventListener('error', () => onBroken(photo), { once: true });
     revealOnLoad(img);
   };
 
   const select = (index, { focus = false } = {}) => {
     const photo = photos[index];
     stage.innerHTML = photoStage(photo, name);
-    watchImage();
+    watchImage(photo);
     caption.innerHTML = photoCaption(photo);
     if (current) current.textContent = String(index + 1);
     if (rights) rights.innerHTML = photoRights(photo);
@@ -150,16 +145,16 @@ function bindGallery(root, photos, name) {
     if (focus) thumbs[index].focus();
     thumbs[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
     announce(`${photoAlt(photo, name)}. ${index + 1} de ${photos.length}`);
+    onSelect(photo);
   };
 
-  watchImage();
+  watchImage(photos[selected]);
 
-  gallery.querySelectorAll('.photo-card__thumb-img').forEach(revealOnLoad);
-
-  // Si una miniatura no carga, queda el ícono; el botón sigue funcionando
-  gallery.querySelectorAll('.photo-card__thumb-img').forEach((img) =>
-    img.addEventListener('error', () => img.replaceWith(document.createRange().createContextualFragment(icons.image(20))), { once: true }),
-  );
+  // Una miniatura que no carga delata una foto rota: se retira de la galería
+  gallery.querySelectorAll('.photo-card__thumb-img').forEach((img, i) => {
+    revealOnLoad(img);
+    img.addEventListener('error', () => onBroken(photos[i]), { once: true });
+  });
 
   gallery.querySelector('[data-photo-thumbs]')?.addEventListener('click', (event) => {
     const thumb = event.target.closest('[data-photo-index]');
@@ -180,6 +175,58 @@ function bindGallery(root, photos, name) {
     event.preventDefault();
     select(next, { focus: true });
   });
+}
+
+const EMPTY_GALLERY = {
+  failed: 'No se pudieron consultar las fotografías. Inténtalo más tarde.',
+  none: 'No hay fotografía documentada en GBIF ni en iNaturalist para este taxón.',
+  broken: 'No se pudieron cargar las fotografías desde su fuente original.',
+};
+
+/**
+ * Pinta la galería y la mantiene sin huecos: una foto que no carga se retira;
+ * si se caen todas las de GBIF, se recurre a iNaturalist antes de mostrar el vacío.
+ */
+function mountGallery(root, photos, name, { signal, failed }) {
+  const slot = root.querySelector('[data-photo-slot]');
+  const rights = root.querySelector('[data-photo-rights]');
+  const broken = new Set();
+  let list = photos;
+  let currentUrl = photos[0]?.url;
+  let fallbackTried = photos[0]?.source !== 'gbif';
+  let empty = failed ? EMPTY_GALLERY.failed : EMPTY_GALLERY.none;
+  let queued = false;
+
+  const render = () => {
+    const selected = Math.max(0, list.findIndex((p) => p.url === currentUrl));
+    slot.innerHTML = photoGallery(list, name, { selected, empty });
+    if (rights) rights.innerHTML = list.length ? photoRights(list[selected]) : noData('Sin fotografía');
+    bindGallery(slot, list, name, {
+      selected,
+      rights,
+      onSelect: (photo) => { currentUrl = photo.url; },
+      onBroken,
+    });
+  };
+
+  async function onBroken(photo) {
+    if (broken.has(photo.url)) return;
+    broken.add(photo.url);
+    list = list.filter((p) => !broken.has(p.url));
+    empty = EMPTY_GALLERY.broken;
+    // Varias imágenes suelen fallar casi a la vez: se repinta una sola vez
+    if (queued) return;
+    queued = true;
+    await new Promise(requestAnimationFrame);
+    if (!list.length && !fallbackTried) {
+      fallbackTried = true;
+      list = await getInatPhotos(name, { signal }).catch(() => []);
+    }
+    queued = false;
+    if (!signal.aborted && slot.isConnected) render();
+  }
+
+  render();
 }
 
 function identityCard(taxon, vernacular) {
@@ -259,16 +306,16 @@ export async function renderSpeciesView(app, route, { signal }) {
     return;
   }
 
+  const name = taxon.canonicalName || taxon.scientificName;
   const [vernacularRes, photoRes, occRes] = await withSlowNotice(Promise.allSettled([
     getVernacularNames(key, { signal }),
-    getPhotos(key, { signal }),
+    getTaxonPhotos(key, name, { signal }),
     searchOccurrences({ taxonKey: key, hasCoordinate: true, limit: 3 }, { signal }),
   ]), app);
   if (signal.aborted) return;
 
-  const name = taxon.canonicalName || taxon.scientificName;
   const vernacular = vernacularRes.status === 'fulfilled' ? pickVernacular(vernacularRes.value) : null;
-  const photos = photoRes.status === 'fulfilled' ? photoRes.value.filter((p) => safeUrl(p.url)) : [];
+  const photos = photoRes.status === 'fulfilled' ? photoRes.value : [];
   const occ = occRes.status === 'fulfilled' ? occRes.value : null;
 
   setState({ lastSpecies: { key: taxon.key, name, rank: taxon.rank } });
@@ -299,7 +346,7 @@ export async function renderSpeciesView(app, route, { signal }) {
         ${synonymNote}
 
         <div class="grid-auto grid-auto--start" style="--min:400px">
-          ${photoGallery(photos, name, photoRes.status === 'rejected')}
+          <div style="display:contents" data-photo-slot></div>
           ${identityCard(taxon, vernacular)}
         </div>
 
@@ -313,7 +360,7 @@ export async function renderSpeciesView(app, route, { signal }) {
           </div>
           <div class="source-links">
             <span class="eyebrow">Derechos de la fotografía mostrada</span>
-            <span class="source-links__item" data-photo-rights>${photos.length ? photoRights(photos[0]) : noData('Sin fotografía')}</span>
+            <span class="source-links__item" data-photo-rights></span>
           </div>
         </section>
       </section>
@@ -328,5 +375,5 @@ export async function renderSpeciesView(app, route, { signal }) {
     rank: taxon.rank,
   });
 
-  bindGallery(app, photos, name);
+  mountGallery(app, photos, name, { signal, failed: photoRes.status === 'rejected' });
 }

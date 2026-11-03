@@ -2,13 +2,14 @@
 // Se pinta al instante con la estructura y luego se completa con datos en vivo de GBIF.
 
 import {
-  getSpecies, getVernacularNames, pickVernacular, getPhoto,
+  getSpecies, getVernacularNames, pickVernacular,
   countOccurrences, countDatasets, countAcceptedSpecies, apiUrl, searchSpeciesUrl,
 } from '../../services/gbif.js';
+import { getTaxonPhotos, getInatPhotos } from '../../services/photos.js';
 import { getFavorites } from '../../state/favorites.js';
 import { getState } from '../../state/store.js';
 import { buildHash } from '../../router.js';
-import { esc, safeUrl } from '../../utils/dom.js';
+import { esc } from '../../utils/dom.js';
 import { formatCompact, formatNumber, licenseLabel } from '../../utils/format.js';
 import { icons, verified, noData, taxonName, apiLink, chip } from '../components.js';
 
@@ -197,13 +198,13 @@ async function hydrateSpecimen(card, { key, name }, opts, alive) {
   const [taxonRes, vernacularRes, photoRes] = await Promise.allSettled([
     getSpecies(key, opts),
     getVernacularNames(key, opts),
-    getPhoto(key, opts),
+    getTaxonPhotos(key, name, opts),
   ]);
   if (!alive()) return;
 
   const taxon = taxonRes.status === 'fulfilled' ? taxonRes.value : null;
   const vernacular = vernacularRes.status === 'fulfilled' ? pickVernacular(vernacularRes.value) : null;
-  const photo = photoRes.status === 'fulfilled' ? photoRes.value : null;
+  const photos = photoRes.status === 'fulfilled' ? photoRes.value : [];
 
   card.querySelector('[data-common]').innerHTML = vernacular
     ? esc(vernacular.vernacularName)
@@ -212,27 +213,44 @@ async function hydrateSpecimen(card, { key, name }, opts, alive) {
 
   const media = card.querySelector('[data-media]');
   const credit = card.querySelector('[data-credit]');
-  const url = safeUrl(photo?.url);
-  if (!url) {
-    // Una consulta fallida no equivale a "sin foto": se dice cuál de los dos pasó
-    media.innerHTML = photoPlaceholder(
-      photoRes.status === 'rejected' ? 'No se pudo consultar la fotografía' : 'Sin fotografía documentada',
-    );
-    return;
-  }
+  // Si las fotos de GBIF fallan al cargar, se recurre una vez a iNaturalist
+  let fallbackTried = photos[0]?.source !== 'gbif';
+  let broken = false;
 
-  media.innerHTML = `
-    <img class="specimen-card__img" src="${esc(url)}" loading="lazy" decoding="async"
-      alt="Fotografía de ${esc(name)}${photo.creator ? `, por ${esc(photo.creator)}` : ''}">`;
-  credit.textContent = [`Foto: ${photo.creator || 'autoría no indicada'}`, licenseLabel(photo.license)]
-    .filter(Boolean)
-    .join(' · ');
+  const show = async (list) => {
+    const [photo, ...rest] = list;
+    if (!photo) {
+      if (!fallbackTried) {
+        fallbackTried = true;
+        const fallback = await getInatPhotos(name, opts).catch(() => []);
+        if (alive()) show(fallback);
+        return;
+      }
+      // Una consulta fallida no equivale a "sin foto": se dice cuál de los tres pasó
+      media.innerHTML = photoPlaceholder(
+        broken ? 'No se pudo cargar la fotografía'
+          : photoRes.status === 'rejected' ? 'No se pudo consultar la fotografía'
+          : 'Sin fotografía documentada',
+      );
+      credit.textContent = '';
+      return;
+    }
 
-  // Si la imagen remota falla, se muestra el estado "sin dato" y se retira el crédito
-  media.querySelector('img').addEventListener('error', () => {
-    media.innerHTML = photoPlaceholder('No se pudo cargar la fotografía');
-    credit.textContent = '';
-  }, { once: true });
+    media.innerHTML = `
+      <img class="specimen-card__img" src="${esc(photo.url)}" loading="lazy" decoding="async"
+        alt="Fotografía de ${esc(name)}${photo.creator ? `, por ${esc(photo.creator)}` : ''}">`;
+    credit.textContent = [`Foto: ${photo.creator || 'autoría no indicada'}`, licenseLabel(photo.license)]
+      .filter(Boolean)
+      .join(' · ');
+
+    // Si la imagen remota falla, se prueba la siguiente en lugar de dejar el hueco
+    media.querySelector('img').addEventListener('error', () => {
+      broken = true;
+      show(rest);
+    }, { once: true });
+  };
+
+  show(photos);
 }
 
 /** Completa la portada con datos en vivo. Cada bloque falla por separado. */

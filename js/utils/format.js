@@ -90,8 +90,9 @@ export function licenseLabel(license) {
   if (!license) return null;
   const s = String(license).toLowerCase();
   if (s.includes('publicdomain/zero') || s === 'cc0_1_0' || s.includes('cc0')) return 'CC0 1.0';
-  const match = s.match(/licenses\/([a-z-]+)\/(\d\.\d)/);
-  if (match) return `CC ${match[1].toUpperCase()} ${match[2]}`;
+  // La versión es opcional: iNaturalist no la indica
+  const match = s.match(/licenses\/([a-z-]+)(?:\/(\d\.\d))?/);
+  if (match) return `CC ${match[1].toUpperCase()}${match[2] ? ` ${match[2]}` : ''}`;
   if (s.startsWith('cc_')) return s.toUpperCase().replace(/_/g, ' ').replace(/ (\d) (\d)$/, ' $1.$2');
   return license;
 }

@@ -2,6 +2,9 @@
 
 export const GBIF_API = 'https://api.gbif.org/v1';
 
+// Respaldo de fotografías cuando GBIF no tiene o no cargan
+export const INAT_API = 'https://api.inaturalist.org/v1';
+
 // Backbone taxonómico de GBIF. Si GBIF cambia de backbone,
 // solo hay que actualizar este identificador.
 export const BACKBONE_KEY = 'd7dddbf4-2cf0-4f39-9b2a-bb099caae36c';
