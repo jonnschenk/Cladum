@@ -1,10 +1,16 @@
 import { Link } from 'react-router-dom';
-import { Pending } from './Pending.jsx';
+import { useDocumentTitle } from '../hooks/useDocumentTitle.js';
+import { StateBlock } from '../components/ui/StateBlock.jsx';
 
 export default function NotFoundPage() {
+  useDocumentTitle('Página no encontrada');
   return (
-    <Pending title="Página no encontrada">
-      Esta dirección no existe en Cladum. <Link to="/">Ir a Explorar</Link>
-    </Pending>
+    <StateBlock
+      type="no-results"
+      level={1}
+      title="Página no encontrada"
+      text="Esta dirección no existe en Cladum."
+      actions={<Link className="btn btn--primary" to="/">Ir a Explorar</Link>}
+    />
   );
 }
