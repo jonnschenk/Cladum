@@ -214,7 +214,10 @@ async function hydrateSpecimen(card, { key, name }, opts, alive) {
   const credit = card.querySelector('[data-credit]');
   const url = safeUrl(photo?.url);
   if (!url) {
-    media.innerHTML = photoPlaceholder('Sin fotografía documentada');
+    // Una consulta fallida no equivale a "sin foto": se dice cuál de los dos pasó
+    media.innerHTML = photoPlaceholder(
+      photoRes.status === 'rejected' ? 'No se pudo consultar la fotografía' : 'Sin fotografía documentada',
+    );
     return;
   }
 

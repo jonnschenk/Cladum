@@ -91,11 +91,15 @@ function revealOnLoad(img) {
 }
 
 /** Foto principal + miniaturas. El crédito vive junto a la imagen y cambia con ella. */
-function photoGallery(photos, name) {
+function photoGallery(photos, name, failed = false) {
   if (!photos.length) {
+    // Una consulta fallida no equivale a "no hay fotos": se dice cuál de los dos pasó
+    const message = failed
+      ? 'No se pudieron consultar las fotografías en GBIF. Inténtalo más tarde.'
+      : 'No hay fotografía documentada en GBIF para este taxón.';
     return `
       <section class="photo-card" aria-label="Fotografía">
-        <div class="photo-card__empty">${icons.image(28)}<span>No hay fotografía documentada en GBIF para este taxón.</span>${noData()}</div>
+        <div class="photo-card__empty">${icons.image(28)}<span>${message}</span>${noData()}</div>
       </section>`;
   }
   const total = photos.length;
@@ -295,7 +299,7 @@ export async function renderSpeciesView(app, route, { signal }) {
         ${synonymNote}
 
         <div class="grid-auto grid-auto--start" style="--min:400px">
-          ${photoGallery(photos, name)}
+          ${photoGallery(photos, name, photoRes.status === 'rejected')}
           ${identityCard(taxon, vernacular)}
         </div>
 
