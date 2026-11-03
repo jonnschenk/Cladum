@@ -1,9 +1,11 @@
-// Lectura y escritura segura de localStorage: en modo privado o con el
-// almacenamiento lleno, el navegador lanza errores en lugar de guardar.
+// Lectura y escritura segura de localStorage / sessionStorage: en modo privado
+// o con el almacenamiento lleno, el navegador lanza errores en lugar de guardar.
 
-export function readJson(key, fallback) {
+const pick = (session) => (session ? sessionStorage : localStorage);
+
+export function readJson(key, fallback, { session = false } = {}) {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = pick(session).getItem(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
@@ -11,9 +13,9 @@ export function readJson(key, fallback) {
 }
 
 /** Devuelve false si el navegador no permitió guardar. */
-export function writeJson(key, value) {
+export function writeJson(key, value, { session = false } = {}) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    pick(session).setItem(key, JSON.stringify(value));
     return true;
   } catch {
     return false;

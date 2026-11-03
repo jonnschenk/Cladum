@@ -4,11 +4,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { STORAGE_KEYS } from '../../config.js';
 import { readJson } from '../../utils/storage.js';
+import { showToast } from '../ui/uiSlice.js';
 
 export function loadFavorites() {
   const list = readJson(STORAGE_KEYS.favorites, []);
   return Array.isArray(list) ? list : [];
 }
+
+/** Texto común para el aviso de almacenamiento no disponible. */
+export const STORAGE_WARNING = 'Tu navegador no permite guardar datos (modo privado o espacio lleno). Lo que guardes se perderá al cerrar la pestaña.';
 
 const favoritesSlice = createSlice({
   name: 'favorites',
@@ -50,3 +54,27 @@ export const selectFavorites = (state) => state.favorites.items;
 export const selectFavoritesCount = (state) => state.favorites.items.length;
 export const selectIsFavorite = (key) => (state) => state.favorites.items.some((f) => f.key === Number(key));
 export const selectPersistFailed = (state) => state.favorites.persistFailed;
+
+/**
+ * Guarda o quita una especie y lo confirma con un aviso.
+ * Al quitar, el aviso ofrece "Deshacer"; nunca se confirma en falso si el navegador no guardó.
+ */
+export const toggleSaved = (taxon) => (dispatch, getState) => {
+  const before = selectFavorites(getState());
+  const position = before.findIndex((f) => f.key === Number(taxon.key));
+  const entry = before[position];
+
+  dispatch(toggleFavorite(taxon));
+
+  if (entry) {
+    dispatch(showToast({ name: taxon.name, text: 'se quitó de guardadas', undo: { entry, position } }));
+  } else if (selectPersistFailed(getState())) {
+    dispatch(showToast({
+      name: taxon.name,
+      text: 'se guardó solo mientras esta pestaña esté abierta: el navegador no permite almacenamiento',
+      duration: 8000,
+    }));
+  } else {
+    dispatch(showToast({ name: taxon.name, text: 'se guardó en este navegador' }));
+  }
+};
