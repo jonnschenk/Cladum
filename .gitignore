@@ -11,6 +11,5 @@ node_modules/
 dist/
 .env
 
-# Sass: css/styles.css es el artefacto compilado (se commitea para GitHub Pages);
-# el source map solo sirve para debug local
-css/*.map
+# Pruebas
+coverage/
