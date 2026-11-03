@@ -5,12 +5,6 @@ Busca especies, recorre su clasificación de reino a especie y consulta sus ocur
 
 **[Ver demo en vivo →](https://jonnschenk.github.io/Cladum/)**
 
-![Deploy](https://github.com/jonnschenk/Cladum/actions/workflows/deploy.yml/badge.svg)
-![React 19](https://img.shields.io/badge/React-19-149eca)
-![Redux Toolkit](https://img.shields.io/badge/Redux_Toolkit-2-764abc)
-![Pruebas](https://img.shields.io/badge/pruebas-105_pasando-2ea44f)
-![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue)
-
 ![Portada de Cladum: buscador de especies con cifras en vivo de GBIF](docs/home.png)
 
 | Ficha de especie | Modo oscuro |
@@ -176,9 +170,6 @@ Configuración única en GitHub: **Settings → Pages → Source: GitHub Actions
 
 Como las rutas usan `#` y el build usa rutas relativas, `dist/` también funciona en Netlify, Vercel o Firebase Hosting sin configuración extra.
 
-## Versión anterior
-
-La primera versión, en JavaScript puro con módulos ES, está en la etiqueta [`v1-vanilla`](../../tree/v1-vanilla).
 
 ## Proyectos de referencia
 
