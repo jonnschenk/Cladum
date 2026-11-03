@@ -7,5 +7,6 @@ export default {
     // axios publica ESM para navegador; en Jest se usa su build CommonJS
     '^axios$': 'axios/dist/node/axios.cjs',
   },
-  testPathIgnorePatterns: ['/node_modules/', '/legacy/'],
+  testPathIgnorePatterns: ['/node_modules/'],
+  collectCoverageFrom: ['src/**/*.{js,jsx}', '!src/main.jsx', '!src/test/**'],
 };
