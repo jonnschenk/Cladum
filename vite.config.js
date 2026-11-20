@@ -5,4 +5,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   base: './',
   plugins: [react()],
+  // host: true expone el servidor en la red local para probar desde el celular
+  server: { host: true },
 });
